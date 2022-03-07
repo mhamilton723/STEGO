@@ -23,4 +23,13 @@ cd src
 python download_models.py
 ```
 
+#### Download Datasets
+
+First, change the `pytorch_data_dir` variable to your 
+systems pytorch data directory where datasets are stored. 
+
+```
+python download_data.py
+```
+
 
