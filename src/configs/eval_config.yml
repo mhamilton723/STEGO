@@ -5,7 +5,7 @@ res: 320
 batch_size: 16
 num_workers: 24
 run_picie: True
-run_crf: True
+run_crf: False
 run_prediction: True
 dark_mode: True
 

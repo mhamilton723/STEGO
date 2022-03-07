@@ -19,8 +19,9 @@ from torchvision import transforms as T
 from torchvision.transforms.functional import resize, pad, to_pil_image
 from tqdm import tqdm
 from torchvision.datasets.cityscapes import Cityscapes
-from torch.utils.data._utils.collate import np_str_obj_array_pattern, default_collate_err_msg_format, \
-    int_classes, string_classes, container_abcs
+from torch.utils.data._utils.collate import np_str_obj_array_pattern, default_collate_err_msg_format
+from torch._six import string_classes
+import collections
 
 
 def prep_for_plot(img, rescale=True, resize=None):
@@ -822,6 +823,8 @@ def entropy(p):
     return -(p * torch.log(p)).sum(dim=1)
 
 
+
+
 def flexible_collate(batch):
     r"""Puts each data field into a tensor with outer dimension batch size"""
 
@@ -851,15 +854,15 @@ def flexible_collate(batch):
             return torch.as_tensor(batch)
     elif isinstance(elem, float):
         return torch.tensor(batch, dtype=torch.float64)
-    elif isinstance(elem, int_classes):
+    elif isinstance(elem, int):
         return torch.tensor(batch)
     elif isinstance(elem, string_classes):
         return batch
-    elif isinstance(elem, container_abcs.Mapping):
+    elif isinstance(elem, collections.abc.Mapping):
         return {key: flexible_collate([d[key] for d in batch]) for key in elem}
     elif isinstance(elem, tuple) and hasattr(elem, '_fields'):  # namedtuple
         return elem_type(*(flexible_collate(samples) for samples in zip(*batch)))
-    elif isinstance(elem, container_abcs.Sequence):
+    elif isinstance(elem, collections.abc.Sequence):
         # check to make sure that the elements in batch have consistent size
         it = iter(batch)
         elem_size = len(next(it))
