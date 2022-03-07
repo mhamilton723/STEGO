@@ -1,8 +1,26 @@
-# Joint Object Discovery and Segmentation
+# STEGO: Unsupervised Semantic Segmentation by Distilling Feature Correspondences
 
-## Code
+## Install
 
-- ``src/unsupervised_segmentation.py`` Code for full unsupervised segmentation
-- ``src/crf_superpixel.py`` Code for just superpixel/CRF loss testing
-- ``src/knn_projection.py`` Code for testing pyramid of feature based KNN correspondence learning
+#### Clone this repository:
+```
+git clone https://github.com/mhamilton723/STEGO.git
+cd STEGO
+```
+
+#### Install Conda Environment
+Please visit the [Anaconda install page](https://docs.anaconda.com/anaconda/install/index.html) if you do not already have conda installed
+
+```
+conda env create -f environment.yml
+conda activate stego
+```
+
+#### Download Pre-Trained Models
+
+```
+cd src
+python download_models.py
+```
+
 
