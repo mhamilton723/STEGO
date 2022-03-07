@@ -1,0 +1,51 @@
+output_root: '../'
+pytorch_data_dir: '/datadrive/pytorch-data/'
+experiment_name: "exp1"
+log_dir: "cleaning"
+
+plot_correspondence: True
+plot_movie: True
+
+
+# Loader params
+num_workers: 24
+max_steps: 5000
+
+num_neighbors: 7
+
+batch_size: 16
+dataset_name: "cocostuff27"
+crop_type: ~
+crop_ratio: .5
+res: 224
+loader_crop_type: "center"
+
+# Model Params
+extra_clusters: 0
+use_true_labels: False
+use_recalibrator: False
+model_type: "vit_small"
+arch: "dino"
+use_fit_model: False
+dino_feat_type: "feat"
+projection_type: "nonlinear"
+dino_patch_size: 8
+granularity: 1
+continuous: True
+dim: 70
+dropout: True
+zero_clamp: True
+
+
+lr: 5e-4
+pretrained_weights: ~
+use_salience: False
+stabalize: False
+stop_at_zero: True
+
+hydra:
+  run:
+    dir: "."
+  output_subdir: ~
+  #job_logging: "disabled"
+  #hydra_logging: "disabled"

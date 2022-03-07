@@ -1,0 +1,17 @@
+output_root: '../'
+pytorch_data_dir: '/datadrive/pytorch-data/'
+experiment_name: "eval1"
+res: 320
+batch_size: 16
+num_workers: 24
+run_picie: True
+run_crf: False
+run_prediction: True
+dark_mode: True
+
+hydra:
+  run:
+    dir: "."
+  output_subdir: ~
+  #job_logging: "disabled"
+  #hydra_logging: "disabled"

@@ -1,0 +1,46 @@
+channels:
+- anaconda
+- pytorch
+- conda-forge
+- menpo
+dependencies:
+- python=3.6.9
+- pip>=21.0,<22
+- pytorch==1.7.1
+- torchvision==0.8.2
+- torchaudio==0.7.2
+- cudatoolkit=11.0
+- nvidia-apex==0.1.0
+- scikit-image
+- opencv
+- cupy
+- pytorch-lightning
+- pip:
+  - matplotlib>=3.3,<3.4
+  - psutil>=5.8,<5.9
+  - tqdm>=4.59,<4.60
+  - pandas>=1.1,<1.2
+  - theano>=1.0,<1.1
+  - scipy>=1.5,<1.6
+  - numpy>=1.10,<1.20
+  - azureml-core==1.26.0
+  - azureml-defaults==1.26.0
+  - azureml-mlflow==1.26.0
+  - azureml-telemetry==1.26.0
+  - azureml-train-restclients-hyperdrive==1.26.0
+  - azureml-train-core==1.26.0
+  - tensorboard==2.4.0
+  - horovod==0.20.0
+  - onnxruntime-gpu>=1.7,<1.8
+  - future==0.17.1
+  - --find-links https://pytorch-geometric.com/whl/torch-1.7.0+cu110.html
+  - kornia
+  - torch-scatter
+  - hydra-core
+  - wget
+  - shap
+  - lime
+  - seaborn
+  - easydict
+  - torchpq
+name: azureml_a3e3434bd3fec67ad455dfe16747f230
