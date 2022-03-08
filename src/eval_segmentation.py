@@ -113,9 +113,15 @@ def my_app(cfg: DictConfig) -> None:
 
         outputs = defaultdict(list)
         model.eval().cuda()
-        par_model = torch.nn.DataParallel(model.net)
-        if run_picie:
-            par_picie = torch.nn.DataParallel(picie)
+
+        if cfg.use_dpp:
+            par_model = torch.nn.DataParallel(model.net)
+            if run_picie:
+                par_picie = torch.nn.DataParallel(picie)
+        else:
+            par_model = model.net
+            if run_picie:
+                par_picie = picie
 
         if cfg.run_prediction:
             for i, batch in enumerate(tqdm(test_loader)):

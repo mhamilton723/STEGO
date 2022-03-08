@@ -8,6 +8,7 @@ run_picie: True
 run_crf: False
 run_prediction: True
 dark_mode: True
+use_ddp: False
 
 hydra:
   run:
