@@ -35,3 +35,11 @@ unzip cocostuff.zip
 ```
 
 
+## Run Evaluation
+
+From inside STEGO/src pleas run the following:
+```
+python eval_segmentation.py
+```
+
+
