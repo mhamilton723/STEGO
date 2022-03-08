@@ -93,7 +93,7 @@ def my_app(cfg: DictConfig) -> None:
         if run_picie:
             picie_state = torch.load("../saved_models/picie_and_probes.pth")
             picie = picie_state["model"].cuda()
-            picie_cluster_probe = picie_state["cluster_probe"].cuda()
+            picie_cluster_probe = picie_state["cluster_probe"].module.cuda()
             picie_cluster_metrics = picie_state["cluster_metrics"]
 
         loader_crop = "center"
