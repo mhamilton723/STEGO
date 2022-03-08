@@ -30,6 +30,8 @@ systems pytorch data directory where datasets are stored.
 
 ```
 python download_data.py
+cd /YOUR/PYTORCH/DATA/DIR
+unzip cocostuff.zip
 ```
 
 
