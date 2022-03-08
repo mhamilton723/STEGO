@@ -92,8 +92,8 @@ def my_app(cfg: DictConfig) -> None:
         run_picie = cfg.run_picie and model.cfg.dataset_name == "cocostuff27"
         if run_picie:
             picie_state = torch.load("../saved_models/picie_and_probes.pth")
-            picie = picie_state["model"]
-            picie_cluster_probe = picie_state["cluster_probe"]
+            picie = picie_state["model"].cuda()
+            picie_cluster_probe = picie_state["cluster_probe"].cuda()
             picie_cluster_metrics = picie_state["cluster_metrics"]
 
         loader_crop = "center"
@@ -114,7 +114,7 @@ def my_app(cfg: DictConfig) -> None:
         outputs = defaultdict(list)
         model.eval().cuda()
 
-        if cfg.use_dpp:
+        if cfg.use_ddp:
             par_model = torch.nn.DataParallel(model.net)
             if run_picie:
                 par_picie = torch.nn.DataParallel(picie)

@@ -2,7 +2,7 @@ output_root: '../'
 pytorch_data_dir: '/datadrive/pytorch-data/'
 experiment_name: "eval1"
 res: 320
-batch_size: 16
+batch_size: 8
 num_workers: 24
 run_picie: True
 run_crf: False
