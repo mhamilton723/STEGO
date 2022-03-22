@@ -1,5 +1,14 @@
 # STEGO: Unsupervised Semantic Segmentation by Distilling Feature Correspondences
 
+Pytorch implementation of the STEGO unsupervised semantic segmentation system.
+[[Paper]](https://arxiv.org/abs/2203.08414) [[Video]](https://aka.ms/stego-video)
+
+
+![Architecture](results/figures/stego.svg)
+
+![Cocostuff results](results/figures/cocostuff27_results.jpg)
+
+
 ## Install
 
 #### Clone this repository:
@@ -35,11 +44,27 @@ unzip cocostuff.zip
 ```
 
 
-## Run Evaluation
+## Evaluation
 
-From inside STEGO/src pleas run the following:
+From inside STEGO/src please run the following:
 ```
 python eval_segmentation.py
 ```
 
+## Training
 
+From inside STEGO/src please run the following:
+```
+python train_segmentation.py
+```
+
+## Citation
+
+```
+@article{hamilton2022unsupervised,
+  title={Unsupervised Semantic Segmentation by Distilling Feature Correspondences},
+  author={Hamilton, Mark and Zhang, Zhoutong and Hariharan, Bharath and Snavely, Noah and Freeman, William T},
+  journal={arXiv preprint arXiv:2203.08414},
+  year={2022}
+}
+```
