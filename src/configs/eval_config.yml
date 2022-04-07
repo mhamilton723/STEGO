@@ -1,6 +1,6 @@
 output_root: '../'
 pytorch_data_dir: '/datadrive/pytorch-data/'
-experiment_name: "eval1"
+experiment_name: "cocostuff"
 res: 320
 batch_size: 8
 num_workers: 24

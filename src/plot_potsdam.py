@@ -19,6 +19,12 @@ def my_app(cfg: DictConfig) -> None:
     # print(OmegaConf.to_yaml(cfg))
     pytorch_data_dir = cfg.pytorch_data_dir
 
+    result_dir = "../results/predictions/potsdam"
+    os.makedirs(result_dir, exist_ok=True)
+    os.makedirs(join(result_dir, "img"), exist_ok=True)
+    os.makedirs(join(result_dir, "label"), exist_ok=True)
+    os.makedirs(join(result_dir, "cluster"), exist_ok=True)
+
     full_dataset = ContrastiveSegDataset(
         pytorch_data_dir=pytorch_data_dir,
         dataset_name="potsdamraw",
@@ -86,6 +92,10 @@ def my_app(cfg: DictConfig) -> None:
     ax[0].imshow(reshaped_img)
     ax[1].imshow(reshaped_preds)
     ax[2].imshow(reshaped_label)
+
+    Image.fromarray(reshaped_img.cuda()).save(join(join(result_dir, "img", str(img_num) + ".png")))
+    Image.fromarray(reshaped_preds).save(join(join(result_dir, "cluster", str(img_num) + ".png")))
+
 
     remove_axes(ax)
     plt.show()

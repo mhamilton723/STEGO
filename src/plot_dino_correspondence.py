@@ -122,14 +122,19 @@ def my_app(cfg: DictConfig) -> None:
             img_num = 6
             query_points = torch.tensor(
                 [
-                    [-.1, 0.0],
-                    [.5, .8],
-                    [-.7, -.7],
+                    [-0.05, .4],
+                    [-.7, .45],
+                    [0.15, -0.44],
                 ]
             ).reshape(1, 3, 1, 2).cuda()
 
-            img = batch["img"][img_num:img_num + 1]
-            img_pos = batch["img_pos"][img_num:img_num + 1]
+            # img = batch["img"][img_num:img_num + 1]
+            # img_pos = batch["img_pos"][img_num:img_num + 1]
+
+            root = "../../interpretable-search/data/sample_images/"
+            img = transform(Image.open(root + "dog_man_1.jpg")).unsqueeze(0)
+            img_pos = transform(Image.open(root + "dog_man_2.jpg")).unsqueeze(0)
+
             plt.style.use('dark_background')
 
             fig, axes = plt.subplots(1, 3, figsize=(3 * 5, 1 * 5), dpi=100)
@@ -148,8 +153,8 @@ def my_app(cfg: DictConfig) -> None:
                 plot_img = point_num == 0
                 if plot_img:
                     axes[0].imshow(prep_for_plot(img[0]))
-                axes[0].scatter(img_point_w, img_point_h,
-                                c=colors[point_num], marker="x", s=400, linewidths=4)
+                axes[0].scatter(img_point_h, img_point_w,
+                                c=colors[point_num], marker="x", s=500, linewidths=5)
 
                 plot_heatmap(axes[1], prep_for_plot(img[0]) * .8, heatmap_intra[point_num],
                              plot_img=plot_img, cmap=cmaps[point_num], symmetric=False)
@@ -160,13 +165,13 @@ def my_app(cfg: DictConfig) -> None:
         if cfg.plot_movie:
             img_num = 6
             key_points = [
-                [-.7, -.7],
-                [-.1, 0.0],
-                [.5, .8],
+                [-.7, .45],
+                [-0.05, .4],
+                [0.15, -0.44],
             ]
             all_points = []
             for i in range(len(key_points)):
-                all_points.extend([key_points[i]] * 50)
+                all_points.extend([key_points[i]] * 60)
 
                 if i < len(key_points) - 1:
                     all_points.extend(
@@ -176,15 +181,16 @@ def my_app(cfg: DictConfig) -> None:
                         ], axis=1).tolist())
             query_points = torch.tensor(all_points).reshape(1, len(all_points), 1, 2).cuda()
 
-            img = batch["img"][img_num:img_num + 1]
-            img_pos = batch["img_pos"][img_num:img_num + 1]
+            root = "../../interpretable-search/data/sample_images/"
+            img = transform(Image.open(root + "dog_man_1.jpg")).unsqueeze(0)
+            img_pos = transform(Image.open(root + "dog_man_2.jpg")).unsqueeze(0)
 
             plt.style.use('dark_background')
             fig, axes = plt.subplots(1, 3, figsize=(3 * 5, 1 * 5), dpi=100)
             remove_axes(axes)
             axes[0].set_title("Image and Query Points", fontsize=20)
             axes[1].set_title("Self Correspondence", fontsize=20)
-            axes[1].set_title("KNN Correspondence", fontsize=20)
+            axes[2].set_title("KNN Correspondence", fontsize=20)
 
             fig.tight_layout()
 
@@ -201,7 +207,7 @@ def my_app(cfg: DictConfig) -> None:
                 frame.append(axes[0].imshow(prep_for_plot(img[0])))
 
                 frame.extend([
-                    axes[0].scatter(img_point_w, img_point_h,
+                    axes[0].scatter(img_point_h, img_point_w,
                                     c=colors[0], marker="x", s=400, linewidths=4),
                     *plot_heatmap(axes[1], prep_for_plot(img[0]) * .8, heatmap_intra[point_num],
                                   cmap=cmaps[0], symmetric=False),

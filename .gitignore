@@ -1,3 +1,4 @@
 models/*
 data/*
 src/.env
+results/predictions/*
