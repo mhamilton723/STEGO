@@ -42,7 +42,12 @@ First, change the `pytorch_data_dir` variable to your
 systems pytorch data directory where datasets are stored. 
 
 ```
-python download_data.py
+python download_datasets.py
+```
+
+Once downloaded please navigate to your pytorch data dir and unzip the resulting files:
+
+```
 cd /YOUR/PYTORCH/DATA/DIR
 unzip cocostuff.zip
 ```
