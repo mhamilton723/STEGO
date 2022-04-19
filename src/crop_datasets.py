@@ -5,7 +5,7 @@ except (ModuleNotFoundError, ImportError):
     from core import *
     from modules import *
 import os
-
+from .data import ContrastiveSegDataset
 import hydra
 import torch
 from omegaconf import DictConfig, OmegaConf

@@ -42,7 +42,7 @@ def my_app(cfg: DictConfig) -> None:
 
     image_sets = ["val", "train"]
     #dataset_names = ["cocostuff27", "cityscapes", "voc"]
-    dataset_names = ["potsdam"]
+    dataset_names = ["iarpa"]
     #crop_types = ["five", None]#, "random"]
     crop_types = [None]
 

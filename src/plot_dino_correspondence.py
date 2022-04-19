@@ -1,12 +1,8 @@
-try:
-    from .core import *
-    from .modules import *
-except (ModuleNotFoundError, ImportError):
-    from core import *
-    from modules import *
 import os
-from datetime import datetime
-
+from os.path import join
+from core import get_transform, load_model, prep_for_plot, remove_axes, prep_args
+from modules import FeaturePyramidNet, DinoFeaturizer, sample
+from data import ContrastiveSegDataset
 import hydra
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
@@ -122,21 +118,16 @@ def my_app(cfg: DictConfig) -> None:
             img_num = 6
             query_points = torch.tensor(
                 [
-                    [-0.05, .4],
-                    [-.7, .45],
-                    [0.15, -0.44],
+                    [-.1, 0.0],
+                    [.5, .8],
+                    [-.7, -.7],
                 ]
             ).reshape(1, 3, 1, 2).cuda()
 
-            # img = batch["img"][img_num:img_num + 1]
-            # img_pos = batch["img_pos"][img_num:img_num + 1]
-
-            root = "../../interpretable-search/data/sample_images/"
-            img = transform(Image.open(root + "dog_man_1.jpg")).unsqueeze(0)
-            img_pos = transform(Image.open(root + "dog_man_2.jpg")).unsqueeze(0)
+            img = batch["img"][img_num:img_num + 1]
+            img_pos = batch["img_pos"][img_num:img_num + 1]
 
             plt.style.use('dark_background')
-
             fig, axes = plt.subplots(1, 3, figsize=(3 * 5, 1 * 5), dpi=100)
             remove_axes(axes)
             axes[0].set_title("Image and Query Points", fontsize=20)
@@ -165,9 +156,9 @@ def my_app(cfg: DictConfig) -> None:
         if cfg.plot_movie:
             img_num = 6
             key_points = [
-                [-.7, .45],
-                [-0.05, .4],
-                [0.15, -0.44],
+                [-.7, -.7],
+                [-.1, 0.0],
+                [.5, .8],
             ]
             all_points = []
             for i in range(len(key_points)):
@@ -181,9 +172,6 @@ def my_app(cfg: DictConfig) -> None:
                         ], axis=1).tolist())
             query_points = torch.tensor(all_points).reshape(1, len(all_points), 1, 2).cuda()
 
-            root = "../../interpretable-search/data/sample_images/"
-            img = transform(Image.open(root + "dog_man_1.jpg")).unsqueeze(0)
-            img_pos = transform(Image.open(root + "dog_man_2.jpg")).unsqueeze(0)
 
             plt.style.use('dark_background')
             fig, axes = plt.subplots(1, 3, figsize=(3 * 5, 1 * 5), dpi=100)
@@ -221,7 +209,7 @@ def my_app(cfg: DictConfig) -> None:
 
             with tqdm(total=len(frames)) as pbar:
                 animation.ArtistAnimation(fig, frames, blit=True).save(
-                    join(result_dir, 'attention_interp_2_img.mp4'),
+                    join(result_dir, 'attention_interp.mp4'),
                     progress_callback=lambda i, n: pbar.update(),
                     writer=animation.FFMpegWriter(fps=30))
 

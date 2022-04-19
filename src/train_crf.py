@@ -31,6 +31,11 @@ def prep(continuous: bool, t: torch.Tensor):
     else:
         return torch.exp(t)
 
+def entropy(p):
+    p = torch.clamp_min(p, .0000001)
+    return -(p * torch.log(p)).sum(dim=1)
+
+
 @hydra.main(config_name="config.yml")
 def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))

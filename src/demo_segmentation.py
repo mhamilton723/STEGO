@@ -11,6 +11,7 @@ from crf import dense_crf
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader, Dataset
 from train_segmentation import LitUnsupervisedSegmenter
+from tqdm import tqdm
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 

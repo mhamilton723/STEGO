@@ -7,9 +7,11 @@ from torchvision.transforms import ToTensor
 try:
     from .core import *
     from .modules import *
+    from .data import *
 except (ModuleNotFoundError, ImportError):
     from core import *
     from modules import *
+    from data import *
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 from datetime import datetime
@@ -384,7 +386,8 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
             }
 
             if self.trainer.is_global_zero and not self.cfg.submitting_to_aml:
-                output_num = 0
+                #output_num = 0
+                output_num = random.randint(0, len(outputs) -1)
                 output = {k: v.detach().cpu() for k, v in outputs[output_num].items()}
 
                 fig, ax = plt.subplots(4, self.cfg.n_images, figsize=(self.cfg.n_images * 3, 4 * 3))
@@ -401,61 +404,62 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
                 plt.tight_layout()
                 add_plot(self.logger.experiment, "plot_labels", self.global_step)
 
-                fig = plt.figure(figsize=(13, 10))
-                ax = fig.gca()
-                hist = self.cluster_metrics.histogram.detach().cpu().to(torch.float32)
-                hist /= torch.clamp_min(hist.sum(dim=0, keepdim=True), 1)
-                sns.heatmap(hist.t(), annot=False, fmt='g', ax=ax, cmap="Blues")
-                ax.set_xlabel('Predicted labels')
-                ax.set_ylabel('True labels')
-                names = get_class_labels(self.cfg.dataset_name)
-                if self.cfg.extra_clusters:
-                    names = names + ["Extra"]
-                ax.set_xticks(np.arange(0, len(names)) + .5)
-                ax.set_yticks(np.arange(0, len(names)) + .5)
-                ax.xaxis.tick_top()
-                ax.xaxis.set_ticklabels(names, fontsize=14)
-                ax.yaxis.set_ticklabels(names, fontsize=14)
-                colors = [self.label_cmap[i] / 255.0 for i in range(len(names))]
-                [t.set_color(colors[i]) for i, t in enumerate(ax.xaxis.get_ticklabels())]
-                [t.set_color(colors[i]) for i, t in enumerate(ax.yaxis.get_ticklabels())]
-                # ax.yaxis.get_ticklabels()[-1].set_color(self.label_cmap[0] / 255.0)
-                # ax.xaxis.get_ticklabels()[-1].set_color(self.label_cmap[0] / 255.0)
-                plt.xticks(rotation=90)
-                plt.yticks(rotation=0)
-                ax.vlines(np.arange(0, len(names) + 1), color=[.5, .5, .5], *ax.get_xlim())
-                ax.hlines(np.arange(0, len(names) + 1), color=[.5, .5, .5], *ax.get_ylim())
-                plt.tight_layout()
-                add_plot(self.logger.experiment, "conf_matrix", self.global_step)
+                if self.cfg.has_labels:
+                    fig = plt.figure(figsize=(13, 10))
+                    ax = fig.gca()
+                    hist = self.cluster_metrics.histogram.detach().cpu().to(torch.float32)
+                    hist /= torch.clamp_min(hist.sum(dim=0, keepdim=True), 1)
+                    sns.heatmap(hist.t(), annot=False, fmt='g', ax=ax, cmap="Blues")
+                    ax.set_xlabel('Predicted labels')
+                    ax.set_ylabel('True labels')
+                    names = get_class_labels(self.cfg.dataset_name)
+                    if self.cfg.extra_clusters:
+                        names = names + ["Extra"]
+                    ax.set_xticks(np.arange(0, len(names)) + .5)
+                    ax.set_yticks(np.arange(0, len(names)) + .5)
+                    ax.xaxis.tick_top()
+                    ax.xaxis.set_ticklabels(names, fontsize=14)
+                    ax.yaxis.set_ticklabels(names, fontsize=14)
+                    colors = [self.label_cmap[i] / 255.0 for i in range(len(names))]
+                    [t.set_color(colors[i]) for i, t in enumerate(ax.xaxis.get_ticklabels())]
+                    [t.set_color(colors[i]) for i, t in enumerate(ax.yaxis.get_ticklabels())]
+                    # ax.yaxis.get_ticklabels()[-1].set_color(self.label_cmap[0] / 255.0)
+                    # ax.xaxis.get_ticklabels()[-1].set_color(self.label_cmap[0] / 255.0)
+                    plt.xticks(rotation=90)
+                    plt.yticks(rotation=0)
+                    ax.vlines(np.arange(0, len(names) + 1), color=[.5, .5, .5], *ax.get_xlim())
+                    ax.hlines(np.arange(0, len(names) + 1), color=[.5, .5, .5], *ax.get_ylim())
+                    plt.tight_layout()
+                    add_plot(self.logger.experiment, "conf_matrix", self.global_step)
 
-                all_bars = torch.cat([
-                    self.cluster_metrics.histogram.sum(0).cpu(),
-                    self.cluster_metrics.histogram.sum(1).cpu()
-                ], axis=0)
-                ymin = max(all_bars.min() * .8, 1)
-                ymax = all_bars.max() * 1.2
+                    all_bars = torch.cat([
+                        self.cluster_metrics.histogram.sum(0).cpu(),
+                        self.cluster_metrics.histogram.sum(1).cpu()
+                    ], axis=0)
+                    ymin = max(all_bars.min() * .8, 1)
+                    ymax = all_bars.max() * 1.2
 
-                fig, ax = plt.subplots(1, 2, figsize=(2 * 5, 1 * 4))
-                ax[0].bar(range(self.n_classes + self.cfg.extra_clusters),
-                          self.cluster_metrics.histogram.sum(0).cpu(),
-                          tick_label=names,
-                          color=colors)
-                ax[0].set_ylim(ymin, ymax)
-                ax[0].set_title("Label Frequency")
-                ax[0].set_yscale('log')
-                ax[0].tick_params(axis='x', labelrotation=90)
+                    fig, ax = plt.subplots(1, 2, figsize=(2 * 5, 1 * 4))
+                    ax[0].bar(range(self.n_classes + self.cfg.extra_clusters),
+                              self.cluster_metrics.histogram.sum(0).cpu(),
+                              tick_label=names,
+                              color=colors)
+                    ax[0].set_ylim(ymin, ymax)
+                    ax[0].set_title("Label Frequency")
+                    ax[0].set_yscale('log')
+                    ax[0].tick_params(axis='x', labelrotation=90)
 
-                ax[1].bar(range(self.n_classes + self.cfg.extra_clusters),
-                          self.cluster_metrics.histogram.sum(1).cpu(),
-                          tick_label=names,
-                          color=colors)
-                ax[1].set_ylim(ymin, ymax)
-                ax[1].set_title("Cluster Frequency")
-                ax[1].set_yscale('log')
-                ax[1].tick_params(axis='x', labelrotation=90)
+                    ax[1].bar(range(self.n_classes + self.cfg.extra_clusters),
+                              self.cluster_metrics.histogram.sum(1).cpu(),
+                              tick_label=names,
+                              color=colors)
+                    ax[1].set_ylim(ymin, ymax)
+                    ax[1].set_title("Cluster Frequency")
+                    ax[1].set_yscale('log')
+                    ax[1].tick_params(axis='x', labelrotation=90)
 
-                plt.tight_layout()
-                add_plot(self.logger.experiment, "label frequency", self.global_step)
+                    plt.tight_layout()
+                    add_plot(self.logger.experiment, "label frequency", self.global_step)
 
             if self.global_step > 2:
                 self.log_dict(tb_metrics)
@@ -548,7 +552,7 @@ def my_app(cfg: DictConfig) -> None:
         cfg=cfg,
     )
 
-    val_dataset = MaterializedDataset(val_dataset)
+    #val_dataset = MaterializedDataset(val_dataset)
     train_loader = DataLoader(train_dataset, cfg.batch_size, shuffle=True, num_workers=cfg.num_workers, pin_memory=True)
 
     if cfg.submitting_to_aml:

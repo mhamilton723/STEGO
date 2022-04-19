@@ -1,9 +1,11 @@
 try:
     from .core import *
     from .modules import *
+    from .data import *
 except (ModuleNotFoundError, ImportError):
     from core import *
     from modules import *
+    from data import *
 import hydra
 import torch.multiprocessing
 from crf import dense_crf
@@ -12,6 +14,8 @@ from torch.utils.data import DataLoader, Dataset
 from train_segmentation import LitUnsupervisedSegmenter, prep_for_plot, get_class_labels
 import seaborn as sns
 from collections import defaultdict
+from tqdm import tqdm
+import time
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 
@@ -78,6 +82,7 @@ class CRFComputer(Dataset):
 
 @hydra.main(config_path="configs", config_name="eval_config.yml")
 def my_app(cfg: DictConfig) -> None:
+    start = time.time()
     pytorch_data_dir = cfg.pytorch_data_dir
     result_dir = "../results/predictions/{}".format(cfg.experiment_name)
     os.makedirs(result_dir, exist_ok=True)
@@ -259,6 +264,7 @@ def my_app(cfg: DictConfig) -> None:
         plt.show()
         plt.clf()
 
+        print("Took {} seconds".format(time.time()-start))
 
 if __name__ == "__main__":
     prep_args()

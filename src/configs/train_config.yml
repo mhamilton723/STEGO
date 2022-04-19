@@ -1,7 +1,7 @@
 output_root: '../'
 pytorch_data_dir: '/datadrive/pytorch-data/'
 experiment_name: "exp1"
-log_dir: "cleaning"
+log_dir: "iarpa"
 azureml_logging: True
 submitting_to_aml: False
 
@@ -13,7 +13,8 @@ max_steps: 5000
 num_neighbors: 7
 
 batch_size: 16
-dataset_name: "cocostuff27"
+dataset_name: "iarpa"
+has_labels: False
 crop_type: ~
 crop_ratio: .5
 res: 224
@@ -51,13 +52,21 @@ aug_alignment_weight: 0.0
 correspondence_weight: 1.0
 
 
-# Potsdam vit small 1/31/22
+# IAROA vit small 1/31/22
 neg_inter_weight: 0.63
 pos_inter_weight: 0.25
 pos_intra_weight: 0.67
 neg_inter_shift: 0.46
-pos_inter_shift: 0.02
-pos_intra_shift: 0.08
+pos_inter_shift: 0.12
+pos_intra_shift: 0.18
+
+# Potsdam vit small 1/31/22
+#neg_inter_weight: 0.63
+#pos_inter_weight: 0.25
+#pos_intra_weight: 0.67
+#neg_inter_shift: 0.46
+#pos_inter_shift: 0.02
+#pos_intra_shift: 0.08
 
 # Cocostuff27 vit small 1/31/22
 #neg_inter_weight: 0.63
