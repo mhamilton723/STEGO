@@ -1,5 +1,5 @@
 # STEGO: Unsupervised Semantic Segmentation by Distilling Feature Correspondences
-### [Project Page](https://iclr.cc/virtual/2022/poster/6068) | [Paper](https://arxiv.org/abs/2203.08414) | [Video](https://aka.ms/stego-video) | [ICLR Session](https://iclr.cc/virtual/2022/poster/6068)
+### [Project Page](https://iclr.cc/virtual/2022/poster/6068) | [Paper](https://arxiv.org/abs/2203.08414) | [Video](https://aka.ms/stego-video) | [ICLR 2022](https://iclr.cc/virtual/2022/poster/6068)
 
 	
 [Mark Hamilton](https://mhamilton.net/),
