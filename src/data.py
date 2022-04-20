@@ -13,7 +13,6 @@ from torchvision.transforms.functional import to_pil_image
 from tqdm import tqdm
 
 
-
 def bit_get(val, idx):
     """Gets the bit value.
     Args:
@@ -73,43 +72,50 @@ def create_cityscapes_colormap():
     return np.array(colors)
 
 
-class Iarpa(Dataset):
-    def __init__(self, root, image_set, transform, target_transform):
-        super(Iarpa, self).__init__()
+class DirectoryDataset(Dataset):
+    def __init__(self, root, path, image_set, transform, target_transform):
+        super(DirectoryDataset, self).__init__()
         self.split = image_set
-        self.root = os.path.join(root, "iarpa")
+        self.dir = join(root, path)
+        self.img_dir = join(self.dir, "imgs", self.split)
+        self.label_dir = join(self.dir, "labels", self.split)
+
         self.transform = transform
         self.target_transform = target_transform
 
-        self.all_files = np.array(sorted(os.listdir(self.root)))
-        np.random.seed(0)
-        random_vals = np.random.rand(len(self.all_files)) > .05
-
-        if image_set == "train":
-            self.files = self.all_files[np.where(random_vals)]
-        elif image_set == "val":
-            self.files = self.all_files[np.where(1-random_vals)]
+        self.img_files = np.array(sorted(os.listdir(self.img_dir)))
+        assert len(self.img_files) > 0
+        if os.path.exists(join(self.dir, "labels")):
+            self.label_files = np.array(sorted(os.listdir(self.label_dir)))
+            assert len(self.img_files) == len(self.label_files)
         else:
-            raise ValueError("Unknown image set: {}".format(image_set))
+            self.label_files = None
 
     def __getitem__(self, index):
-        image_fn = self.files[index]
-        img = Image.open(join(self.root, image_fn))
+        image_fn = self.img_files[index]
+        img = Image.open(join(self.img_dir, image_fn))
+
+        if self.label_files is not None:
+            label_fn = self.label_files[index]
+            label = Image.open(join(self.label_dir, label_fn))
 
         seed = np.random.randint(2147483647)
         random.seed(seed)
         torch.manual_seed(seed)
         img = self.transform(img)
 
-        random.seed(seed)
-        torch.manual_seed(seed)
-        label = torch.zeros(img.shape[1], img.shape[2], dtype=torch.int64) - 1
-        mask = (label > 0).to(torch.float32)
+        if self.label_files is not None:
+            random.seed(seed)
+            torch.manual_seed(seed)
+            label = self.target_transform(label)
+        else:
+            label = torch.zeros(img.shape[1], img.shape[2], dtype=torch.int64) - 1
 
+        mask = (label > 0).to(torch.float32)
         return img, label, mask
 
     def __len__(self):
-        return len(self.files)
+        return len(self.img_files)
 
 
 class Potsdam(Dataset):
@@ -446,10 +452,10 @@ class ContrastiveSegDataset(Dataset):
             self.n_classes = 3
             dataset_class = PotsdamRaw
             extra_args = dict(coarse_labels=True)
-        elif dataset_name == "iarpa":
-            self.n_classes = 5
-            dataset_class = Iarpa
-            extra_args = dict()
+        elif dataset_name == "directory":
+            self.n_classes = cfg.dir_dataset_n_classes
+            dataset_class = DirectoryDataset
+            extra_args = dict(path=cfg.dir_dataset_name)
         elif dataset_name == "cityscapes" and crop_type is None:
             self.n_classes = 27
             dataset_class = CityscapesSeg
@@ -493,8 +499,9 @@ class ContrastiveSegDataset(Dataset):
         else:
             model_type = cfg.model_type
 
+        nice_dataset_name = cfg.dir_dataset_name if dataset_name == "directory" else dataset_name
         feature_cache_file = join(pytorch_data_dir, "nns", "nns_{}_{}_{}_{}_{}.npz".format(
-            model_type, dataset_name, image_set, crop_type, cfg.res))
+            model_type, nice_dataset_name, image_set, crop_type, cfg.res))
         if pos_labels or pos_images:
             if not os.path.exists(feature_cache_file) or compute_knns:
                 raise ValueError("could not find nn file {} please run precompute_knns".format(feature_cache_file))
@@ -556,4 +563,3 @@ class ContrastiveSegDataset(Dataset):
             ret["coord_aug"] = coord_aug.permute(1, 2, 0)
 
         return ret
-

@@ -1,46 +1,21 @@
 import io
+from datetime import datetime
 
 import PIL.Image
-import torch
-from torch.utils.tensorboard.summary import hparams
-from torchvision.transforms import ToTensor
-
-try:
-    from .core import *
-    from .modules import *
-except (ModuleNotFoundError, ImportError):
-    from core import *
-    from modules import *
-from torch.utils.data import DataLoader
-import numpy as np
-import torch.nn.functional as F
-from datetime import datetime
 import hydra
-from omegaconf import DictConfig, OmegaConf
 import pytorch_lightning as pl
+import seaborn as sns
+from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.utilities.seed import seed_everything
-import matplotlib.pyplot as plt
 from sklearn.metrics import auc, precision_recall_curve, average_precision_score
-from train_segmentation import LitUnsupervisedSegmenter, get_class_labels
-import seaborn as sns
+from torch.utils.tensorboard.summary import hparams
+from torchvision.transforms import ToTensor
+from data import *
+from modules import *
+from train_segmentation import get_class_labels
 
-
-@torch.jit.script
-def shuffle(x):
-    return x[torch.randperm(x.shape[0])]
-
-
-def add_plot(writer, name, step):
-    buf = io.BytesIO()
-    plt.savefig(buf, format='jpeg', dpi=100)
-    buf.seek(0)
-    image = PIL.Image.open(buf)
-    image = ToTensor()(image)
-    writer.add_image(name, image, step)
-    plt.clf()
-    plt.close()
 
 
 @torch.jit.script
@@ -48,20 +23,6 @@ def super_perm(size: int, device: torch.device):
     perm = torch.randperm(size, device=device, dtype=torch.long)
     perm[perm == torch.arange(size, device=device)] += 1
     return perm % size
-
-
-@torch.jit.script
-def resize(classes: torch.Tensor, size: int):
-    return F.interpolate(classes, (size, size), mode="bilinear", align_corners=False)
-
-
-def add_hparams_fixed(writer, hparam_dict, metric_dict, global_step):
-    exp, ssi, sei = hparams(hparam_dict, metric_dict)
-    writer.file_writer.add_summary(exp)
-    writer.file_writer.add_summary(ssi)
-    writer.file_writer.add_summary(sei)
-    for k, v in metric_dict.items():
-        writer.add_scalar(k, v, global_step)
 
 
 def prep_fd_coord(fd):
@@ -179,16 +140,6 @@ class LitRecalibrator(pl.LightningModule):
             ld, stego_fd, l1, l2 = self.get_net_fd(dino_code, dino_code, label, label, coords1, coords2)
             ld, dino_fd, l1, l2 = self.get_net_fd(dino_feats, dino_feats, label, label, coords1, coords2)
             ld, moco_fd, l1, l2 = self.get_net_fd(moco_feats, moco_feats, label, label, coords1, coords2)
-            # ld, stego_fd, l1, l2 = self.get_net_fd(dino_code, dino_code_pos, label, label_pos, coords1, coords2)
-            # ld, dino_fd, l1, l2 = self.get_net_fd(dino_feats, dino_feats_pos, label, label_pos, coords1, coords2)
-            # ld, moco_fds, l1, l2 = self.get_net_fds(moco_feats, moco_feats_pos, label, label_pos, coords1, coords2)
-
-            # coords = torch.where(prep_fd_2(dino_fd) > .6)
-            # selected_l1 = (l1[coords[0], coords[1], coords[2]]-1).reshape(-1)
-            # selected_l2 = (l2[coords[0], coords[3], coords[4]]-1).reshape(-1)
-            # subsample = torch.randperm(selected_l1.shape[0])[:2000]
-            #
-            # self.cm_metrics.update(selected_l1[subsample].cpu(), selected_l2[subsample].cpu())
 
             return dict(
                 dino_fd=dino_fd,

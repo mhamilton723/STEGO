@@ -1,9 +1,6 @@
 import torch
 
-try:
-    from .core import *
-except (ModuleNotFoundError, ImportError):
-    from core import *
+from utils import *
 import torch.nn.functional as F
 import dino.vision_transformer as vits
 

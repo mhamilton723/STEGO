@@ -7,11 +7,7 @@ from tensorboardX import SummaryWriter
 from torch.nn import Sequential, Linear, LogSoftmax
 from torch.utils.data import Dataset
 from torchvision.transforms import ToTensor
-
-try:
-    from .core import *
-except (ModuleNotFoundError, ImportError):
-    from core import *
+from utils import *
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 import numpy as np

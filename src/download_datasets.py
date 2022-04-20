@@ -1,18 +1,16 @@
-try:
-    from .core import *
-except (ModuleNotFoundError, ImportError):
-    from core import *
+from utils import *
 import hydra
 from omegaconf import DictConfig
 import os
 import wget
+
 
 @hydra.main(config_path="configs", config_name="eval_config.yml")
 def my_app(cfg: DictConfig) -> None:
     pytorch_data_dir = cfg.pytorch_data_dir
     dataset_names = [
         "potsdam",
-        #"cityscapes",
+        "cityscapes",
         "cocostuff",
         "potsdamraw"]
     url_base = "https://marhamilresearch4.blob.core.windows.net/stego-public/pytorch_data/"
@@ -25,7 +23,6 @@ def my_app(cfg: DictConfig) -> None:
             wget.download(url_base + dataset_name + ".zip", join(pytorch_data_dir, dataset_name + ".zip"))
         else:
             print("\n Found {}, skipping download".format(dataset_name))
-
 
 
 if __name__ == "__main__":

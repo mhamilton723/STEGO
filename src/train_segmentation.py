@@ -1,17 +1,6 @@
-import io
-
-import PIL.Image
-from torch.utils.tensorboard.summary import hparams
-from torchvision.transforms import ToTensor
-
-try:
-    from .core import *
-    from .modules import *
-    from .data import *
-except (ModuleNotFoundError, ImportError):
-    from core import *
-    from modules import *
-    from data import *
+from utils import *
+from modules import *
+from data import *
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 from datetime import datetime
@@ -27,54 +16,6 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 import sys
 
 torch.multiprocessing.set_sharing_strategy('file_system')
-
-@torch.jit.script
-def shuffle(x):
-    return x[torch.randperm(x.shape[0])]
-
-
-def add_plot(writer, name, step):
-    buf = io.BytesIO()
-    plt.savefig(buf, format='jpeg')
-    buf.seek(0)
-    image = PIL.Image.open(buf)
-    image = ToTensor()(image)
-    writer.add_image(name, image, step)
-    plt.clf()
-    plt.close()
-
-
-@torch.jit.script
-def resize(classes: torch.Tensor, size: int):
-    return F.interpolate(classes, (size, size), mode="bilinear", align_corners=False)
-
-
-def add_hparams_fixed(writer, hparam_dict, metric_dict, global_step):
-    exp, ssi, sei = hparams(hparam_dict, metric_dict)
-    writer.file_writer.add_summary(exp)
-    writer.file_writer.add_summary(ssi)
-    writer.file_writer.add_summary(sei)
-    for k, v in metric_dict.items():
-        writer.add_scalar(k, v, global_step)
-
-
-def run_eval(simple_net, cfg, dim, n_classes, writer, i, n_attempts=1):
-    from eval_segmentation import full_eval
-
-    df, tb_metrics = full_eval(simple_net, cfg, dim, n_classes, n_attempts)
-    print(tb_metrics)
-    add_hparams_fixed(writer, dict(cfg), tb_metrics, i)
-
-    if cfg.azureml_logging:
-        from azureml.core.run import Run
-        run_logger = Run.get_context()
-        for metric, value in tb_metrics.items():
-            run_logger.log(metric, value)
-
-
-def one_hot_feats(labels, n_classes):
-    return F.one_hot(labels, n_classes).permute(0, 3, 1, 2).to(torch.float32)
-
 
 def get_class_labels(dataset_name):
     if dataset_name.startswith("cityscapes"):
@@ -109,48 +50,6 @@ def get_class_labels(dataset_name):
         raise ValueError("Unknown Dataset {}".format(dataset_name))
 
 
-class StegoFeaturizer(nn.Module):
-    def __init__(self, dim, cfg):
-        super().__init__()
-        self.cfg = cfg
-        self.dropout = torch.nn.Dropout2d(p=.1)
-        self.loaded = LitUnsupervisedSegmenter.load_from_checkpoint(
-            "../models/vit_base_cocostuff27.ckpt")
-        self.model = self.loaded.net
-        self.dim = dim
-        self.n_feats = self.loaded.cfg.dim
-        self.cluster1 = self.make_clusterer(self.n_feats)
-        self.proj_type = cfg.projection_type
-        if self.proj_type == "nonlinear":
-            self.cluster2 = self.make_nonlinear_clusterer(self.n_feats)
-
-    def make_clusterer(self, in_channels):
-        return torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels, self.dim, (1, 1)))
-
-    def make_nonlinear_clusterer(self, in_channels):
-        return torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels, in_channels, (1, 1)),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels, self.dim, (1, 1)))
-
-    def forward(self, img):
-        self.model.eval()
-        _, image_feat = self.model(img)
-
-        if self.proj_type is not None:
-            code = self.cluster1(self.dropout(image_feat))
-            if self.proj_type == "nonlinear":
-                code += self.cluster2(self.dropout(image_feat))
-        else:
-            code = image_feat
-
-        if self.cfg.dropout:
-            return self.dropout(image_feat), code
-        else:
-            return image_feat, code
-
-
 class LitUnsupervisedSegmenter(pl.LightningModule):
     def __init__(self, n_classes, cfg):
         super().__init__()
@@ -166,8 +65,6 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
         if cfg.arch == "feature-pyramid":
             cut_model = load_model(cfg.model_type, data_dir).cuda()
             self.net = FeaturePyramidNet(cfg.granularity, cut_model, dim, cfg.continuous)
-        elif cfg.arch == "dino" and "use_fit_model" in cfg and cfg.use_fit_model:
-            self.net = StegoFeaturizer(dim, cfg)
         elif cfg.arch == "dino":
             self.net = DinoFeaturizer(dim, cfg)
         else:

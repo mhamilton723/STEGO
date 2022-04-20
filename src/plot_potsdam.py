@@ -1,16 +1,10 @@
-try:
-    from .core import *
-    from .modules import *
-except (ModuleNotFoundError, ImportError):
-    from core import *
-    from modules import *
 from collections import defaultdict
-
 import hydra
 import torch.multiprocessing
-from crf import dense_crf
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader
+from data import *
+from modules import *
 from train_segmentation import LitUnsupervisedSegmenter
 
 
@@ -95,7 +89,6 @@ def my_app(cfg: DictConfig) -> None:
 
     Image.fromarray(reshaped_img.cuda()).save(join(join(result_dir, "img", str(img_num) + ".png")))
     Image.fromarray(reshaped_preds).save(join(join(result_dir, "cluster", str(img_num) + ".png")))
-
 
     remove_axes(ax)
     plt.show()

@@ -4,7 +4,7 @@ experiment_name: "exp1"
 log_dir: "cleaning"
 
 plot_correspondence: True
-plot_movie: False
+plot_movie: True
 
 
 # Loader params

@@ -1,11 +1,6 @@
-try:
-    from .core import *
-    from .modules import *
-except (ModuleNotFoundError, ImportError):
-    from core import *
-    from modules import *
+from modules import *
 import os
-from .data import ContrastiveSegDataset
+from data import ContrastiveSegDataset
 import hydra
 import torch
 from omegaconf import DictConfig, OmegaConf
@@ -13,6 +8,7 @@ from pytorch_lightning.utilities.seed import seed_everything
 from torch.utils.data import DataLoader
 from torchvision.transforms.functional import five_crop, _get_image_size, crop
 from tqdm import tqdm
+from torch.utils.data import Dataset
 
 
 def _random_crops(img, size, seed, n):
@@ -103,11 +99,13 @@ class RandomCropComputer(Dataset):
             dataset_name,
             None,
             img_set,
-            cfg.num_neighbors,
             T.ToTensor(),
             ToTargetTensor(),
             cfg=cfg,
-            pos_labels=False, pos_images=False, mask=False,
+            num_neighbors=cfg.num_neighbors,
+            pos_labels=False,
+            pos_images=False,
+            mask=False,
             aug_geometric_transform=None,
             aug_photometric_transform=None,
             extra_transform=cropper
@@ -139,9 +137,9 @@ def my_app(cfg: DictConfig) -> None:
     # crop_types = ["five","random"]
     # crop_ratios = [.5, .7]
 
-    dataset_names = ["cocostuff27"]
+    dataset_names = ["cityscapes"]
     img_sets = ["train", "val"]
-    crop_types = [None]
+    crop_types = ["five"]
     crop_ratios = [.5]
 
     for crop_ratio in crop_ratios:
@@ -149,7 +147,6 @@ def my_app(cfg: DictConfig) -> None:
             for dataset_name in dataset_names:
                 for img_set in img_sets:
                     dataset = RandomCropComputer(cfg, dataset_name, img_set, crop_type, crop_ratio)
-                    print(len(dataset))
                     loader = DataLoader(dataset, 1, shuffle=False, num_workers=cfg.num_workers, collate_fn=lambda l: l)
                     for _ in tqdm(loader):
                         pass

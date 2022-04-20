@@ -1,6 +1,6 @@
 import os
 from os.path import join
-from core import get_transform, load_model, prep_for_plot, remove_axes, prep_args
+from utils import get_transform, load_model, prep_for_plot, remove_axes, prep_args
 from modules import FeaturePyramidNet, DinoFeaturizer, sample
 from data import ContrastiveSegDataset
 import hydra

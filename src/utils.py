@@ -1,6 +1,7 @@
 import collections
 import os
 from os.path import join
+import io
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,6 +17,7 @@ from torch.utils.data._utils.collate import np_str_obj_array_pattern, default_co
 from torchmetrics import Metric
 from torchvision import models
 from torchvision import transforms as T
+from torch.utils.tensorboard.summary import hparams
 
 
 def prep_for_plot(img, rescale=True, resize=None):
@@ -28,6 +30,40 @@ def prep_for_plot(img, rescale=True, resize=None):
     if rescale:
         plot_img = (plot_img - plot_img.min()) / (plot_img.max() - plot_img.min())
     return plot_img
+
+
+def add_plot(writer, name, step):
+    buf = io.BytesIO()
+    plt.savefig(buf, format='jpeg', dpi=100)
+    buf.seek(0)
+    image = Image.open(buf)
+    image = T.ToTensor()(image)
+    writer.add_image(name, image, step)
+    plt.clf()
+    plt.close()
+
+
+@torch.jit.script
+def shuffle(x):
+    return x[torch.randperm(x.shape[0])]
+
+
+def add_hparams_fixed(writer, hparam_dict, metric_dict, global_step):
+    exp, ssi, sei = hparams(hparam_dict, metric_dict)
+    writer.file_writer.add_summary(exp)
+    writer.file_writer.add_summary(ssi)
+    writer.file_writer.add_summary(sei)
+    for k, v in metric_dict.items():
+        writer.add_scalar(k, v, global_step)
+
+
+@torch.jit.script
+def resize(classes: torch.Tensor, size: int):
+    return F.interpolate(classes, (size, size), mode="bilinear", align_corners=False)
+
+
+def one_hot_feats(labels, n_classes):
+    return F.one_hot(labels, n_classes).permute(0, 3, 1, 2).to(torch.float32)
 
 
 def load_model(model_type, data_dir):
@@ -99,19 +135,6 @@ class UnNormalize(object):
         for t, m, s in zip(image2, self.mean, self.std):
             t.mul_(s).add_(m)
         return image2
-
-
-class MultiOptimizer(object):
-    def __init__(self, *op):
-        self.optimizers = op
-
-    def zero_grad(self):
-        for op in self.optimizers:
-            op.zero_grad()
-
-    def step(self):
-        for op in self.optimizers:
-            op.step()
 
 
 normalize = T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
@@ -249,7 +272,6 @@ class UnsupervisedMetrics(Metric):
         metric_dict = {self.prefix + "mIoU": iou[~torch.isnan(iou)].mean().item(),
                        self.prefix + "Accuracy": opc.item()}
         return {k: 100 * v for k, v in metric_dict.items()}
-
 
 
 def flexible_collate(batch):

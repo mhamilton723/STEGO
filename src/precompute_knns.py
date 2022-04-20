@@ -1,12 +1,7 @@
-try:
-    from .core import *
-    from .modules import *
-except (ModuleNotFoundError, ImportError):
-    from core import *
-    from modules import *
+from data import ContrastiveSegDataset
+from modules import *
 import os
 from os.path import join
-
 import hydra
 import numpy as np
 import torch.multiprocessing
@@ -25,6 +20,7 @@ def get_feats(model, loader):
         all_feats.append(feats.to("cpu", non_blocking=True))
     return torch.cat(all_feats, dim=0).contiguous()
 
+
 @hydra.main(config_path="configs", config_name="train_config.yml")
 def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
@@ -41,9 +37,9 @@ def my_app(cfg: DictConfig) -> None:
     print(cfg.output_root)
 
     image_sets = ["val", "train"]
-    #dataset_names = ["cocostuff27", "cityscapes", "voc"]
-    dataset_names = ["iarpa"]
-    #crop_types = ["five", None]#, "random"]
+    # dataset_names = ["cocostuff27", "cityscapes", "voc"]
+    dataset_names = ["directory"]
+    # crop_types = ["five", None]#, "random"]
     crop_types = [None]
 
     res = 224
@@ -63,8 +59,10 @@ def my_app(cfg: DictConfig) -> None:
     for crop_type in crop_types:
         for image_set in image_sets:
             for dataset_name in dataset_names:
+                nice_dataset_name = cfg.dir_dataset_name if dataset_name == "directory" else dataset_name
+
                 feature_cache_file = join(pytorch_data_dir, "nns", "nns_{}_{}_{}_{}_{}.npz".format(
-                    cfg.model_type, dataset_name, image_set, crop_type, res))
+                    cfg.model_type, nice_dataset_name, image_set, crop_type, res))
 
                 if not os.path.exists(feature_cache_file):
                     print("{} not found, computing".format(feature_cache_file))
@@ -94,8 +92,7 @@ def my_app(cfg: DictConfig) -> None:
                         nearest_neighbors = torch.cat(all_nns, dim=0)
 
                         np.savez_compressed(feature_cache_file, nns=nearest_neighbors.numpy())
-                        print("Saved NNs", cfg.model_type, dataset_name, image_set)
-
+                        print("Saved NNs", cfg.model_type, nice_dataset_name, image_set)
 
 
 if __name__ == "__main__":

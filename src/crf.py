@@ -8,7 +8,7 @@ import pydensecrf.utils as utils
 import torch
 import torch.nn.functional as F
 import torchvision.transforms.functional as VF
-from core import unnorm
+from utils import unnorm
 
 MAX_ITER = 10
 POS_W = 3
