@@ -34,13 +34,13 @@ This is the official implementation of the paper "Unsupervised Semantic Segmenta
 
 ## Install
 
-#### Clone this repository:
+### Clone this repository:
 ```shell script
 git clone https://github.com/mhamilton723/STEGO.git
 cd STEGO
 ```
 
-#### Install Conda Environment
+### Install Conda Environment
 Please visit the [Anaconda install page](https://docs.anaconda.com/anaconda/install/index.html) if you do not already have conda installed
 
 ```shell script
@@ -48,14 +48,14 @@ conda env create -f environment.yml
 conda activate stego
 ```
 
-#### Download Pre-Trained Models
+### Download Pre-Trained Models
 
 ```shell script
 cd src
 python download_models.py
 ```
 
-#### Download Datasets
+### Download Datasets
 
 First, change the `pytorch_data_dir` variable to your 
 systems pytorch data directory where datasets are stored. 
@@ -103,7 +103,7 @@ To monitor training with tensorboard run the following from `STEGO` directory:
 tensorboard --logdir logs
 ```
 
-#### Bringing your own data
+### Bringing your own data
 
 To train STEGO on your own dataset please create a directory in your pytorch data root with the following structure:
 
@@ -145,21 +145,21 @@ python train_segmentation.py
 
 ## Understanding STEGO
 
-#### Unsupervised semantic segmentation
+### Unsupervised semantic segmentation
 Real-world images can be cluttered with multiple objects making classification feel arbitrary. Furthermore, objects in the real world don't always fit in bounding boxes. Semantic segmentation methods aim to avoid these challenges by assigning each pixel of an image its own class label. Conventional semantic segmentation methods are notoriously difficult to train due to their dependence on densely labeled images, which can take 100x longer to create than bounding boxes or class annotations. This makes it hard to gather sizable and diverse datasets impossible in domains where humans don't know the structure a-priori. We sidestep these challenges by learning an ontology of objects with pixel-level semantic segmentation through only self-supervision.
 
-#### Deep features connect objects across images
+### Deep features connect objects across images
 Self-supervised contrastive learning enables algorithms to learn intelligent representations for images without supervision. STEGO builds on this work by showing that representations from self-supervised visual transformers like  Caron et. al.’s  DINO are already aware of the relationships between objects. By computing the cosine similarity between image features, we can see that similar semantic regions such as grass, motorcycles, and sky are “linked” together by feature similarity.
 
 ![Feature connection GIF](https://mhamilton.net/images/Picture3.gif)
 
 
-#### The STEGO architecture
+### The STEGO architecture
 The STEGO unsupervised segmentation system learns by distilling correspondences between images into a set of class labels using a contrastive loss. In particular we aim to learn a segmentation that respects the induced correspondences between objects. To achieve this we train a shallow segmentation network on top of the DINO ViT backbone with three contrastive terms that distill connections between an image and itself, similar images, and random other images respectively. If two regions are strongly coupled by deep features we encourage them to share the same class.
 
 ![Architecture](results/figures/stego.svg)
 
-#### Results
+### Results
 
 We evaluate the STEGO algorithm on the CocoStuff, Cityscapes, and Potsdam semantic segmentation datasets. Because these methods see no labels, we use a Hungarian matching algorithm to find the best mapping between clusters and dataset classes. We find that STEGO is capable of segmenting complex and cluttered scenes with much higher spatial resolution and sensitivity than the prior art, [PiCIE](https://sites.google.com/view/picie-cvpr2021/home). This not only yields a substantial qualitative improvement, but also more than doubles the mean intersection over union (mIoU). For results on Cityscapes, and Potsdam see [our paper](https://arxiv.org/abs/2203.08414).
 
