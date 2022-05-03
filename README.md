@@ -105,7 +105,7 @@ tensorboard --logdir logs
 
 ### Bringing your own data
 
-To train STEGO on your own dataset please create a directory in your pytorch data root with the following structure:
+To train STEGO on your own dataset please create a directory in your pytorch data root with the following structure. Note, if you do not have labels, omit the `labels` directory from the structure:
 
 ```
 dataset_name
