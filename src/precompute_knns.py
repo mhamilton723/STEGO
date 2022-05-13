@@ -37,12 +37,12 @@ def my_app(cfg: DictConfig) -> None:
     print(cfg.output_root)
 
     image_sets = ["val", "train"]
-    dataset_names = ["cocostuff27", "cityscapes", "potsdam"]
-    crop_types = ["five", None]
+    # dataset_names = ["cocostuff27", "cityscapes", "potsdam"]
+    # crop_types = ["five", None]
 
     # Uncomment these lines to run on custom datasets
-    #dataset_names = ["directory"]
-    #crop_types = [None]
+    dataset_names = ["directory"]
+    crop_types = [None]
 
     res = 224
     n_batches = 16
@@ -78,7 +78,7 @@ def my_app(cfg: DictConfig) -> None:
                         cfg=cfg,
                     )
 
-                    loader = DataLoader(dataset, 256, shuffle=False, num_workers=cfg.num_workers, pin_memory=False)
+                    loader = DataLoader(dataset, cfg.precompute_batch_size, shuffle=False, num_workers=cfg.num_workers, pin_memory=False)
 
                     with torch.no_grad():
                         normed_feats = get_feats(par_model, loader)

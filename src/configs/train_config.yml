@@ -1,24 +1,25 @@
 output_root: '../'
-pytorch_data_dir: '/datadrive/pytorch-data/'
+pytorch_data_dir: 'E:/Dataset/'
 experiment_name: "exp1"
-log_dir: "cocostuff27"
+log_dir: "voc12"
 azureml_logging: True
 submitting_to_aml: False
 
 # Loader params
-num_workers: 24
+num_workers: 8
 max_steps: 5000
 batch_size: 16
+precompute_batch_size: 128
 
 num_neighbors: 7
-dataset_name: "cocostuff27"
+dataset_name: "directory"
 
 # Used if dataset_name is "directory"
-dir_dataset_name: ~
-dir_dataset_n_classes: 5
+dir_dataset_name: VOC12
+dir_dataset_n_classes: 20
 
 has_labels: False
-crop_type: "five"
+crop_type: None
 crop_ratio: .5
 res: 224
 loader_crop_type: "center"

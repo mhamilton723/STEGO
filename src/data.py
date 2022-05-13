@@ -108,6 +108,8 @@ class DirectoryDataset(Dataset):
             random.seed(seed)
             torch.manual_seed(seed)
             label = self.target_transform(label)
+            # for pascal voc compatability
+            label = label[0]
         else:
             label = torch.zeros(img.shape[1], img.shape[2], dtype=torch.int64) - 1
 
@@ -467,6 +469,10 @@ class ContrastiveSegDataset(Dataset):
         elif dataset_name == "cocostuff3":
             self.n_classes = 3
             dataset_class = Coco
+            extra_args = dict(coarse_labels=True, subset=6, exclude_things=True)
+        elif dataset_name == "voc12":
+            self.n_classes = 20
+            dataset_class = Voc12
             extra_args = dict(coarse_labels=True, subset=6, exclude_things=True)
         elif dataset_name == "cocostuff15":
             self.n_classes = 15
