@@ -3,7 +3,12 @@ import torch
 from utils import *
 import torch.nn.functional as F
 import dino.vision_transformer as vits
+from FINCH import FINCH
 
+def FINCH_to_label(c, shape, id=-1):
+    c = torch.nn.functional.one_hot(c[..., id].long(), c[..., id].max()+1)
+    c = c.reshape(shape[0], shape[1], c.shape[1])
+    return c
 
 class LambdaLayer(nn.Module):
     def __init__(self, lambd):
@@ -70,6 +75,36 @@ class DinoFeaturizer(nn.Module):
         if self.proj_type == "nonlinear":
             self.cluster2 = self.make_nonlinear_clusterer(self.n_feats)
 
+    def get_PCF(self, image_feat):
+        bs, feat_dim, w_featmap, h_featmap = image_feat.shape
+        image_feat = image_feat.reshape(bs, feat_dim, -1).permute(0, 2, 1)
+        PCF = (image_feat @ image_feat.transpose(1, 2)).squeeze()
+        PCF = PCF.reshape(bs, w_featmap, h_featmap, (h_featmap * w_featmap))
+        return PCF
+
+    def get_Seg(self, PCF):
+        shape = PCF.shape[1:3]
+        Seg = []
+        for PCF_i in PCF:
+            PCF_i = PCF_i.detach()
+            c, num_clust, req_c = FINCH(PCF_i.reshape(PCF_i.shape[0]*PCF_i.shape[1], -1).cpu().numpy(), verbose=False)
+            Seg_i = FINCH_to_label(torch.from_numpy(c).to(PCF_i.device), shape, -1)
+            Seg.append(Seg_i.unsqueeze(0))
+        return Seg
+
+    def get_RWE(self, seg, feat):
+        bs, feat_dim, w_featmap, h_featmap = feat.shape
+        EMB = []
+        for i, seg_i in enumerate(seg):
+            seg_i = seg_i.reshape(-1, seg_i.shape[-1])
+            # divide by N "number of pixel" for each segment to make average embedding
+            N = seg_i.sum(0)
+            f = feat[i].reshape(feat[i].shape[0], -1).T
+            emb_i = ((seg_i.float().T @ f).T / N).T
+            emb_i = seg_i.float() @ emb_i
+            EMB.append(emb_i.permute(1, 0).reshape(feat_dim, w_featmap, h_featmap).unsqueeze(0))
+        return torch.cat(EMB)
+
     def make_clusterer(self, in_channels):
         return torch.nn.Sequential(
             torch.nn.Conv2d(in_channels, self.dim, (1, 1)))  # ,
@@ -104,6 +139,11 @@ class DinoFeaturizer(nn.Module):
 
             if return_class_feat:
                 return feat[:, :1, :].reshape(feat.shape[0], 1, 1, -1).permute(0, 3, 1, 2)
+
+        if self.cfg.apply_pcf:
+            PCF = self.get_PCF(image_feat)
+            seg = self.get_Seg(PCF)
+            image_feat = self.get_RWE(seg, image_feat)
 
         if self.proj_type is not None:
             code = self.cluster1(self.dropout(image_feat))

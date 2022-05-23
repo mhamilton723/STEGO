@@ -34,6 +34,7 @@ arch: "dino"
 use_fit_model: False
 dino_feat_type: "feat"
 projection_type: "nonlinear"
+apply_pcf: True
 #projection_type: linear
 dino_patch_size: 8
 granularity: 1
