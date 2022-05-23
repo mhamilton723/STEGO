@@ -1,7 +1,7 @@
 # STEGO: Unsupervised Semantic Segmentation by Distilling Feature Correspondences
 ### [Project Page](https://iclr.cc/virtual/2022/poster/6068) | [Paper](https://arxiv.org/abs/2203.08414) | [Video](https://aka.ms/stego-video) | [ICLR 2022](https://iclr.cc/virtual/2022/poster/6068)
 
-	
+
 [Mark Hamilton](https://mhamilton.net/),
 [Zhoutong Zhang](https://ztzhang.info/),
 [Bharath Hariharan](http://home.bharathh.info/),
@@ -13,7 +13,6 @@ This is the official implementation of the paper "Unsupervised Semantic Segmenta
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/unsupervised-semantic-segmentation-by-2/unsupervised-semantic-segmentation-on)](https://paperswithcode.com/sota/unsupervised-semantic-segmentation-on?p=unsupervised-semantic-segmentation-by-2)\
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/unsupervised-semantic-segmentation-by-2/unsupervised-semantic-segmentation-on-coco-4)](https://paperswithcode.com/sota/unsupervised-semantic-segmentation-on-coco-4?p=unsupervised-semantic-segmentation-by-2) \
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/unsupervised-semantic-segmentation-by-2/unsupervised-semantic-segmentation-on-potsdam-1)](https://paperswithcode.com/sota/unsupervised-semantic-segmentation-on-potsdam-1?p=unsupervised-semantic-segmentation-by-2)
-
 
 [![Overview Video](https://marhamilresearch4.blob.core.windows.net/stego-public/graphics/STEGO%20Header%20video%20(2).jpg)](https://youtu.be/NPub4E4o8BA)
 
@@ -48,7 +47,7 @@ conda env create -f environment.yml
 conda activate stego
 ```
 
-### Download Pre-Trained Models
+### Download Pre - Trained Models
 
 ```shell script
 cd src
@@ -137,7 +136,7 @@ If you want to train with cropping to increase spatial resolution run our [cropp
 
 Finally, uncomment the custom dataset code and run `python precompute_knns.py`
  from `STEGO\src` to generate the prerequisite KNN information for the custom dataset.
- 
+
 You can now train on your custom dataset using:
 ```shell script
 python train_segmentation.py
