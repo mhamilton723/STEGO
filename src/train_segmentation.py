@@ -495,7 +495,7 @@ def my_app(cfg: DictConfig) -> None:
         ],
         **gpu_args
     )
-    trainer.fit(model, train_loader, val_loader)
+    trainer.fit(model, train_loader, val_loader, ckpt_path="/content/drive/MyDrive/Unsupervised_Seg/STEGO/chp_voc/checkpoints/voc12/directory_exp1_date_May14_21-29-51/epoch=26-step=3600.ckpt")
 
 
 if __name__ == "__main__":

@@ -380,6 +380,7 @@ class CroppedDataset(Dataset):
         self.img_dir = join(self.root, "img", self.split)
         self.label_dir = join(self.root, "label", self.split)
         self.num_images = len(os.listdir(self.img_dir))
+        # self.num_images = 1024
         assert self.num_images == len(os.listdir(self.label_dir))
 
     def __getitem__(self, index):
@@ -446,6 +447,7 @@ class ContrastiveSegDataset(Dataset):
         self.pos_images = pos_images
         self.extra_transform = extra_transform
 
+        # breakpoint()
         if dataset_name == "potsdam":
             self.n_classes = 3
             dataset_class = Potsdam

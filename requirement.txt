@@ -1,0 +1,20 @@
+cupy
+pytorch-lightning
+matplotlib>=3.3,<3.4
+psutil>=5.8,<5.9
+tqdm>=4.59,<4.60
+pandas>=1.1,<1.2
+scipy>=1.5,<1.6
+numpy>=1.10,<1.20
+tensorboard==2.4.0
+future==0.17.1
+--find-links https://pytorch-geometric.com/whl/torch-1.7.0+cu110.html
+kornia
+hydra-core
+wget
+seaborn
+easydict
+torchpq
+pydensecrf
+setuptools==59.5.0
+pyDeprecate==0.3.1

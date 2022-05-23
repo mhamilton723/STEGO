@@ -6,7 +6,9 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.utilities.seed import seed_everything
 from torch.utils.data import DataLoader
-from torchvision.transforms.functional import five_crop, _get_image_size, crop
+from torchvision.transforms.functional import five_crop, crop
+import torchvision.transforms.functional_pil as F_pil
+import torchvision.transforms.functional_tensor as F_t
 from tqdm import tqdm
 from torch.utils.data import Dataset
 
@@ -37,6 +39,13 @@ def _random_crops(img, size, seed, n):
 
     if len(size) != 2:
         raise ValueError("Please provide only two dimensions (h, w) for size.")
+
+
+
+    if isinstance(img, torch.Tensor):
+      image_width, image_height = F_t._get_image_size(img)(img)
+    else:
+      image_width, image_height = F_pil._get_image_size(img)
 
     image_width, image_height = _get_image_size(img)
     crop_height, crop_width = size
@@ -137,7 +146,7 @@ def my_app(cfg: DictConfig) -> None:
     # crop_types = ["five","random"]
     # crop_ratios = [.5, .7]
 
-    dataset_names = ["cityscapes"]
+    dataset_names = ["cocostuff27"]
     img_sets = ["train", "val"]
     crop_types = ["five"]
     crop_ratios = [.5]
