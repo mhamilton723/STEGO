@@ -1,6 +1,7 @@
 from utils import *
 from modules import *
 from data import *
+import random
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 from datetime import datetime
@@ -73,7 +74,10 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
         self.train_cluster_probe = ClusterLookup(dim, n_classes)
 
         self.cluster_probe = ClusterLookup(dim, n_classes + cfg.extra_clusters)
-        self.linear_probe = nn.Conv2d(dim, n_classes, (1, 1))
+        if cfg.apply_pcf and cfg.pcf_mode == '1d':
+            self.linear_probe = nn.Linear(dim, n_classes)
+        else:
+            self.linear_probe = nn.Conv2d(dim, n_classes, (1, 1))
 
         self.decoder = nn.Conv2d(dim, self.net.n_feats, (1, 1))
 
@@ -213,6 +217,8 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
         detached_code = torch.clone(code.detach())
 
         linear_logits = self.linear_probe(detached_code)
+        if self.cfg.apply_pcf and self.cfg.pcf_mode =='1d':
+            linear_logits = self.net.RWE_to_image(linear_logits)
         linear_logits = F.interpolate(linear_logits, label.shape[-2:], mode='bilinear', align_corners=False)
         linear_logits = linear_logits.permute(0, 2, 3, 1).reshape(-1, self.n_classes)
         linear_loss = self.linear_probe_loss_fn(linear_logits[mask], flat_label[mask]).mean()
@@ -258,9 +264,13 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
 
         with torch.no_grad():
             feats, code = self.net(img)
-            code = F.interpolate(code, label.shape[-2:], mode='bilinear', align_corners=False)
-
             linear_preds = self.linear_probe(code)
+            if self.cfg.apply_pcf and self.cfg.pcf_mode =='1d':
+                linear_preds = self.net.RWE_to_image(linear_preds)
+                code = self.net.RWE_to_image(code)
+            code = F.interpolate(code, label.shape[-2:], mode='bilinear', align_corners=False)
+            linear_preds = F.interpolate(linear_preds, label.shape[-2:], mode='bilinear', align_corners=False)
+
             linear_preds = linear_preds.argmax(1)
             self.linear_metrics.update(linear_preds, label)
 
@@ -474,8 +484,8 @@ def my_app(cfg: DictConfig) -> None:
 
     else:
         # gpu_args = dict(gpus=-1, accelerator='ddp', val_check_interval=cfg.val_freq)
-        gpu_args = dict(gpus=1, accelerator='ddp', val_check_interval=cfg.val_freq)
-        # gpu_args = dict(gpus=1, accelerator=None, val_check_interval=cfg.val_freq)
+        # gpu_args = dict(gpus=1, accelerator='ddp', val_check_interval=cfg.val_freq)
+        gpu_args = dict(gpus=1, accelerator=None, val_check_interval=cfg.val_freq)
 
         if gpu_args["val_check_interval"] > len(train_loader) // 4:
             gpu_args.pop("val_check_interval")
@@ -495,7 +505,7 @@ def my_app(cfg: DictConfig) -> None:
         ],
         **gpu_args
     )
-    trainer.fit(model, train_loader, val_loader, ckpt_path="/content/drive/MyDrive/Unsupervised_Seg/STEGO/chp_voc/checkpoints/voc12/directory_exp1_date_May14_21-29-51/epoch=26-step=3600.ckpt")
+    trainer.fit(model, train_loader, val_loader)
 
 
 if __name__ == "__main__":

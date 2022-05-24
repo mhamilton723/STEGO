@@ -4,7 +4,7 @@ from utils import *
 import torch.nn.functional as F
 import dino.vision_transformer as vits
 from FINCH import FINCH
-
+from multiprocessing.pool import Pool
 def FINCH_to_label(c, shape, id=-1):
     c = torch.nn.functional.one_hot(c[..., id].long(), c[..., id].max()+1)
     c = c.reshape(shape[0], shape[1], c.shape[1])
@@ -35,7 +35,12 @@ class DinoFeaturizer(nn.Module):
         for p in self.model.parameters():
             p.requires_grad = False
         self.model.eval().cuda()
-        self.dropout = torch.nn.Dropout2d(p=.1)
+
+        if self.cfg.apply_pcf and self.cfg.pcf_mode == '2d':
+            self.dropout = torch.nn.Dropout2d(p=.1)
+        
+        if cfg.num_workers > 1:
+            self.Pool = Pool(cfg.num_workers)
 
         if arch == "vit_small" and patch_size == 16:
             url = "dino_deitsmall16_pretrain/dino_deitsmall16_pretrain.pth"
@@ -70,10 +75,19 @@ class DinoFeaturizer(nn.Module):
             self.n_feats = 384
         else:
             self.n_feats = 768
-        self.cluster1 = self.make_clusterer(self.n_feats)
-        self.proj_type = cfg.projection_type
-        if self.proj_type == "nonlinear":
-            self.cluster2 = self.make_nonlinear_clusterer(self.n_feats)
+        if self.cfg.apply_pcf and self.cfg.pcf_mode == '1d':
+            self.cluster1 = torch.nn.Sequential(torch.nn.Linear(self.n_feats, self.dim))
+            self.proj_type = cfg.projection_type
+            if self.proj_type == "nonlinear":
+                self.cluster2 = torch.nn.Sequential(
+                                    torch.nn.Linear(self.n_feats, self.n_feats),
+                                    torch.nn.ReLU(),
+                                    torch.nn.Linear(self.n_feats, self.dim))
+        else:
+            self.cluster1 = self.make_clusterer(self.n_feats)
+            self.proj_type = cfg.projection_type
+            if self.proj_type == "nonlinear":
+                self.cluster2 = self.make_nonlinear_clusterer(self.n_feats)
 
     def get_PCF(self, image_feat):
         bs, feat_dim, w_featmap, h_featmap = image_feat.shape
@@ -84,26 +98,62 @@ class DinoFeaturizer(nn.Module):
 
     def get_Seg(self, PCF):
         shape = PCF.shape[1:3]
-        Seg = []
+        Seg, inputs = [], []
+        
+        # prepare input
         for PCF_i in PCF:
             PCF_i = PCF_i.detach()
-            c, num_clust, req_c = FINCH(PCF_i.reshape(PCF_i.shape[0]*PCF_i.shape[1], -1).cpu().numpy(), verbose=False)
+            inputs.append(PCF_i.reshape(PCF_i.shape[0]*PCF_i.shape[1], -1).cpu().numpy())
+
+        # run FINCH Clustering
+        if self.cfg.num_workers > 1:
+            results = self.Pool.map(FINCH, inputs)
+        else:
+            results = []
+            for input_i in inputs:
+                results.append(FINCH(input_i))
+        
+        # aggregate results
+        for c in results:
             Seg_i = FINCH_to_label(torch.from_numpy(c).to(PCF_i.device), shape, -1)
             Seg.append(Seg_i.unsqueeze(0))
+        
+            # for PCF_i in PCF:
+            #     PCF_i = PCF_i.detach()
+            #     c = FINCH(PCF_i.reshape(PCF_i.shape[0]*PCF_i.shape[1], -1).cpu().numpy())
+            #     Seg_i = FINCH_to_label(torch.from_numpy(c).to(PCF_i.device), shape, -1)
+            #     Seg.append(Seg_i.unsqueeze(0))
         return Seg
 
-    def get_RWE(self, seg, feat):
+    def get_RWE(self, feat, pcf_mode):
         bs, feat_dim, w_featmap, h_featmap = feat.shape
         EMB = []
-        for i, seg_i in enumerate(seg):
+        # image_feat = []
+        for i, seg_i in enumerate(self.seg):
             seg_i = seg_i.reshape(-1, seg_i.shape[-1])
             # divide by N "number of pixel" for each segment to make average embedding
             N = seg_i.sum(0)
             f = feat[i].reshape(feat[i].shape[0], -1).T
             emb_i = ((seg_i.float().T @ f).T / N).T
-            emb_i = seg_i.float() @ emb_i
-            EMB.append(emb_i.permute(1, 0).reshape(feat_dim, w_featmap, h_featmap).unsqueeze(0))
+            if pcf_mode == '2d':
+                emb_i = seg_i.float() @ emb_i.detach()
+                emb_i = emb_i.permute(1, 0).reshape(feat_dim, w_featmap, h_featmap).unsqueeze(0)
+            EMB.append(emb_i)
+            # image_feat.append(emb_i)
         return torch.cat(EMB)
+
+    def RWE_to_image(self, EMB):
+        feat_dim = EMB.shape[1]
+        image_feat = []
+        cnt = 0
+        for i, seg_i in enumerate(self.seg):
+            w_featmap, h_featmap = seg_i.shape[1:3]
+            seg_i = seg_i.reshape(-1, seg_i.shape[-1])
+            emb_i = seg_i.float() @ EMB[cnt:cnt+seg_i.shape[1]]
+            cnt += seg_i.shape[1]
+            emb_i = emb_i.permute(1, 0).reshape(feat_dim, w_featmap, h_featmap).unsqueeze(0)
+            image_feat.append(emb_i)
+        return torch.cat(image_feat)
 
     def make_clusterer(self, in_channels):
         return torch.nn.Sequential(
@@ -142,20 +192,30 @@ class DinoFeaturizer(nn.Module):
 
         if self.cfg.apply_pcf:
             PCF = self.get_PCF(image_feat)
-            seg = self.get_Seg(PCF)
-            image_feat = self.get_RWE(seg, image_feat)
+            self.seg = self.get_Seg(PCF)
+            image_feat = self.get_RWE(image_feat, self.cfg.pcf_mode)
 
         if self.proj_type is not None:
-            code = self.cluster1(self.dropout(image_feat))
-            if self.proj_type == "nonlinear":
-                code += self.cluster2(self.dropout(image_feat))
+            if self.cfg.pcf_mode == '2d':
+                code = self.cluster1(self.dropout(image_feat))
+                if self.proj_type == "nonlinear":
+                    code += self.cluster2(self.dropout(image_feat))
+            else:
+                code = self.cluster1(image_feat)
+                if self.proj_type == "nonlinear":
+                    code += self.cluster2(image_feat)
         else:
             code = image_feat
-
-        if self.cfg.dropout:
-            return self.dropout(image_feat), code
+        if self.cfg.apply_pcf:
+            if self.cfg.dropout and self.cfg.pcf_mode == '2d':
+                return self.dropout(image_feat), code
+            else:
+                return image_feat, code
         else:
-            return image_feat, code
+            if self.cfg.dropout:
+                return self.dropout(image_feat), code
+            else:
+                return image_feat, code
 
 
 class ResizeAndClassify(nn.Module):
@@ -364,15 +424,25 @@ class ContrastiveCorrelationLoss(nn.Module):
 
     def helper(self, f1, f2, c1, c2, shift):
         with torch.no_grad():
-            # Comes straight from backbone which is currently frozen. this saves mem.
-            fd = tensor_correlation(norm(f1), norm(f2))
+            if len(f1.shape) > 2:
+                # Comes straight from backbone which is currently frozen. this saves mem.
+                fd = tensor_correlation(norm(f1), norm(f2))
 
-            if self.cfg.pointwise:
-                old_mean = fd.mean()
-                fd -= fd.mean([3, 4], keepdim=True)
-                fd = fd - fd.mean() + old_mean
-
-        cd = tensor_correlation(norm(c1), norm(c2))
+                if self.cfg.pointwise:
+                    old_mean = fd.mean()
+                    fd -= fd.mean([3, 4], keepdim=True)
+                    fd = fd - fd.mean() + old_mean
+            else:
+                fd = (norm(f1)@norm(f2).T)
+                
+                if self.cfg.pointwise:
+                    old_mean = fd.mean()
+                    fd -= fd.mean([1], keepdim=True)
+                    fd = fd - fd.mean() + old_mean
+        if len(f1.shape) > 2:
+            cd = tensor_correlation(norm(c1), norm(c2))
+        else:
+            cd = (norm(c1)@norm(c2).T)
 
         if self.cfg.zero_clamp:
             min_val = 0.0
@@ -392,25 +462,32 @@ class ContrastiveCorrelationLoss(nn.Module):
                 orig_code: torch.Tensor, orig_code_pos: torch.Tensor,
                 ):
 
-        coord_shape = [orig_feats.shape[0], self.cfg.feature_samples, self.cfg.feature_samples, 2]
+        if len(orig_feats.shape) > 2: 
+            coord_shape = [orig_feats.shape[0], self.cfg.feature_samples, self.cfg.feature_samples, 2]
 
-        if self.cfg.use_salience:
-            coords1_nonzero = sample_nonzero_locations(orig_salience, coord_shape)
-            coords2_nonzero = sample_nonzero_locations(orig_salience_pos, coord_shape)
-            coords1_reg = torch.rand(coord_shape, device=orig_feats.device) * 2 - 1
-            coords2_reg = torch.rand(coord_shape, device=orig_feats.device) * 2 - 1
-            mask = (torch.rand(coord_shape[:-1], device=orig_feats.device) > .1).unsqueeze(-1).to(torch.float32)
-            coords1 = coords1_nonzero * mask + coords1_reg * (1 - mask)
-            coords2 = coords2_nonzero * mask + coords2_reg * (1 - mask)
+            if self.cfg.use_salience:
+                coords1_nonzero = sample_nonzero_locations(orig_salience, coord_shape)
+                coords2_nonzero = sample_nonzero_locations(orig_salience_pos, coord_shape)
+                coords1_reg = torch.rand(coord_shape, device=orig_feats.device) * 2 - 1
+                coords2_reg = torch.rand(coord_shape, device=orig_feats.device) * 2 - 1
+                mask = (torch.rand(coord_shape[:-1], device=orig_feats.device) > .1).unsqueeze(-1).to(torch.float32)
+                coords1 = coords1_nonzero * mask + coords1_reg * (1 - mask)
+                coords2 = coords2_nonzero * mask + coords2_reg * (1 - mask)
+            else:
+                coords1 = torch.rand(coord_shape, device=orig_feats.device) * 2 - 1
+                coords2 = torch.rand(coord_shape, device=orig_feats.device) * 2 - 1
+
+            feats = sample(orig_feats, coords1)
+            code = sample(orig_code, coords1)
+
+            feats_pos = sample(orig_feats_pos, coords2)
+            code_pos = sample(orig_code_pos, coords2)
         else:
-            coords1 = torch.rand(coord_shape, device=orig_feats.device) * 2 - 1
-            coords2 = torch.rand(coord_shape, device=orig_feats.device) * 2 - 1
+            feats = orig_feats
+            code = orig_code
 
-        feats = sample(orig_feats, coords1)
-        code = sample(orig_code, coords1)
-
-        feats_pos = sample(orig_feats_pos, coords2)
-        code_pos = sample(orig_code_pos, coords2)
+            feats_pos = orig_feats_pos
+            code_pos = orig_code_pos
 
         pos_intra_loss, pos_intra_cd = self.helper(
             feats, feats, code, code, self.cfg.pos_intra_shift)
@@ -421,8 +498,13 @@ class ContrastiveCorrelationLoss(nn.Module):
         neg_cds = []
         for i in range(self.cfg.neg_samples):
             perm_neg = super_perm(orig_feats.shape[0], orig_feats.device)
-            feats_neg = sample(orig_feats[perm_neg], coords2)
-            code_neg = sample(orig_code[perm_neg], coords2)
+            if len(orig_feats.shape) > 2: 
+                feats_neg = sample(orig_feats[perm_neg], coords2)
+                code_neg = sample(orig_code[perm_neg], coords2)
+            else:
+                feats_neg = orig_feats[perm_neg]
+                code_neg = orig_code[perm_neg]
+
             neg_inter_loss, neg_inter_cd = self.helper(
                 feats, feats_neg, code, code_neg, self.cfg.neg_inter_shift)
             neg_losses.append(neg_inter_loss)

@@ -1,16 +1,15 @@
-output_root: '/content/drive/MyDrive/Unsupervised_Seg/STEGO/chp_voc/'
-# pytorch_data_dir: '/content/drive/MyDrive/Unsupervised_Seg'
-pytorch_data_dir: '/content/drive/MyDrive/Unsupervised_Seg'
-experiment_name: "exp3"
+output_root: '../'
+pytorch_data_dir: 'E:/Dataset/'
+experiment_name: "exp1"
 log_dir: "voc12"
 azureml_logging: True
 submitting_to_aml: False
 
 # Loader params
-num_workers: 4
-max_steps: 100000
-batch_size: 32
-precompute_batch_size: 200
+num_workers: 2
+max_steps: 5000
+batch_size: 2
+precompute_batch_size: 64
 
 num_neighbors: 7
 dataset_name: "directory"
@@ -20,7 +19,7 @@ dir_dataset_name: VOC12
 dir_dataset_n_classes: 20
 
 has_labels: False
-crop_type: null
+crop_type: None
 crop_ratio: .5
 res: 224
 loader_crop_type: "center"
@@ -35,8 +34,9 @@ use_fit_model: False
 dino_feat_type: "feat"
 projection_type: "nonlinear"
 apply_pcf: True
+pcf_mode: '1d' #'2d'
 #projection_type: linear
-dino_patch_size: 8
+dino_patch_size: 16
 granularity: 1
 continuous: True
 dim: 70
@@ -76,8 +76,8 @@ correspondence_weight: 1.0
 
 # Cocostuff27 vit small 1/31/22
 neg_inter_weight: 0.63
-pos_intra_weight: 0.67
 pos_inter_weight: 0.25
+pos_intra_weight: 0.67
 neg_inter_shift: 0.66
 pos_inter_shift: 0.02
 pos_intra_shift: 0.08
@@ -164,7 +164,7 @@ color_space: "rgb"
 reset_probe_steps: ~
 
 # Logging params
-n_images: 5
+n_images: 4
 scalar_log_freq: 10
 checkpoint_freq: 50
 val_freq: 100
