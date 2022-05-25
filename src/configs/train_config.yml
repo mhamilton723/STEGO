@@ -34,9 +34,10 @@ use_fit_model: False
 dino_feat_type: "feat"
 projection_type: "nonlinear"
 apply_pcf: True
-pcf_mode: '1d' #'2d'
+pcf_mode: '2d' #'1d'/'2d'
+apply_pcf_val: False
 #projection_type: linear
-dino_patch_size: 16
+dino_patch_size: 8
 granularity: 1
 continuous: True
 dim: 70
@@ -44,6 +45,8 @@ dropout: True
 zero_clamp: True
 
 lr: 5e-4
+lr_linear_probe: 5e-3
+lr_cluster_probe: 5e-3
 pretrained_weights: ~
 use_salience: False
 stabalize: False

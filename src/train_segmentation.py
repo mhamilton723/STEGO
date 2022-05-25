@@ -239,8 +239,8 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
             print("RESETTING PROBES")
             self.linear_probe.reset_parameters()
             self.cluster_probe.reset_parameters()
-            self.trainer.optimizers[1] = torch.optim.Adam(list(self.linear_probe.parameters()), lr=5e-3)
-            self.trainer.optimizers[2] = torch.optim.Adam(list(self.cluster_probe.parameters()), lr=5e-3)
+            self.trainer.optimizers[1] = torch.optim.Adam(list(self.linear_probe.parameters()), lr=self.cfg.lr_linear_probe)
+            self.trainer.optimizers[2] = torch.optim.Adam(list(self.cluster_probe.parameters()), lr=self.cfg.lr_cluster_probe)
 
         if self.global_step % 2000 == 0 and self.global_step > 0:
             print("RESETTING TFEVENT FILE")
@@ -261,6 +261,11 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
         img = batch["img"]
         label = batch["label"]
         self.net.eval()
+        
+        apply_pcf = self.net.cfg.apply_pcf
+        if not self.cfg.apply_pcf_val and self.cfg.pcf_mode =='2d':
+            self.net.cfg.apply_pcf = False
+            self.cfg.apply_pcf = False
 
         with torch.no_grad():
             feats, code = self.net(img)
@@ -277,6 +282,9 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
             cluster_loss, cluster_preds = self.cluster_probe(code, None)
             cluster_preds = cluster_preds.argmax(1)
             self.cluster_metrics.update(cluster_preds, label)
+            
+            self.net.cfg.apply_pcf = apply_pcf
+            self.cfg.apply_pcf = apply_pcf
 
             return {
                 'img': img[:self.cfg.n_images].detach().cpu(),
@@ -387,8 +395,8 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
             main_params.extend(self.decoder.parameters())
 
         net_optim = torch.optim.Adam(main_params, lr=self.cfg.lr)
-        linear_probe_optim = torch.optim.Adam(list(self.linear_probe.parameters()), lr=5e-3)
-        cluster_probe_optim = torch.optim.Adam(list(self.cluster_probe.parameters()), lr=5e-3)
+        linear_probe_optim = torch.optim.Adam(list(self.linear_probe.parameters()), lr=self.cfg.lr_linear_probe)
+        cluster_probe_optim = torch.optim.Adam(list(self.cluster_probe.parameters()), lr=self.cfg.lr_cluster_probe)
 
         return net_optim, linear_probe_optim, cluster_probe_optim
 

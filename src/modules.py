@@ -118,11 +118,6 @@ class DinoFeaturizer(nn.Module):
             Seg_i = FINCH_to_label(torch.from_numpy(c).to(PCF_i.device), shape, -1)
             Seg.append(Seg_i.unsqueeze(0))
         
-            # for PCF_i in PCF:
-            #     PCF_i = PCF_i.detach()
-            #     c = FINCH(PCF_i.reshape(PCF_i.shape[0]*PCF_i.shape[1], -1).cpu().numpy())
-            #     Seg_i = FINCH_to_label(torch.from_numpy(c).to(PCF_i.device), shape, -1)
-            #     Seg.append(Seg_i.unsqueeze(0))
         return Seg
 
     def get_RWE(self, feat, pcf_mode):
@@ -136,7 +131,7 @@ class DinoFeaturizer(nn.Module):
             f = feat[i].reshape(feat[i].shape[0], -1).T
             emb_i = ((seg_i.float().T @ f).T / N).T
             if pcf_mode == '2d':
-                emb_i = seg_i.float() @ emb_i.detach()
+                emb_i = seg_i.float() @ emb_i
                 emb_i = emb_i.permute(1, 0).reshape(feat_dim, w_featmap, h_featmap).unsqueeze(0)
             EMB.append(emb_i)
             # image_feat.append(emb_i)
