@@ -171,11 +171,12 @@ We evaluate the STEGO algorithm on the CocoStuff, Cityscapes, and Potsdam semant
 ## Citation
 
 ```
-@article{hamilton2022unsupervised,
-  title={Unsupervised Semantic Segmentation by Distilling Feature Correspondences},
-  author={Hamilton, Mark and Zhang, Zhoutong and Hariharan, Bharath and Snavely, Noah and Freeman, William T},
-  journal={arXiv preprint arXiv:2203.08414},
-  year={2022}
+@inproceedings{hamilton2022unsupervised,
+	title={Unsupervised Semantic Segmentation by Distilling Feature Correspondences},
+	author={Mark Hamilton and Zhoutong Zhang and Bharath Hariharan and Noah Snavely and William T. Freeman},
+	booktitle={International Conference on Learning Representations},
+	year={2022},
+	url={https://openreview.net/forum?id=SaKO6z6Hl0c}
 }
 ```
 
