@@ -1,10 +1,10 @@
 output_root: '../'
-pytorch_data_dir: '/datadrive/pytorch-data/'
-experiment_name: "cocostuff"
+pytorch_data_dir: '/home/zaiwang/workspace/STEGO/Dataset/'
+experiment_name: "cocostuff27"
 res: 320
 batch_size: 8
 num_workers: 24
-run_picie: True
+run_picie: False
 run_crf: True
 run_prediction: True
 dark_mode: True
@@ -13,7 +13,7 @@ use_ddp: False
 model_paths:
   - "../saved_models/cocostuff27_vit_base_5.ckpt"
   #- "../saved_models/cityscapes_vit_base_1.ckpt"
-  #- "../saved_models/potsdam_test.ckpt"
+#  - "../saved_models/potsdam_test.ckpt"
 
 hydra:
   run:
