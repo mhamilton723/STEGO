@@ -14,8 +14,11 @@ import torch.multiprocessing
 import seaborn as sns
 from pytorch_lightning.callbacks import ModelCheckpoint
 import sys
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 
 torch.multiprocessing.set_sharing_strategy('file_system')
+
 
 def get_class_labels(dataset_name):
     if dataset_name.startswith("cityscapes"):
@@ -473,7 +476,7 @@ def my_app(cfg: DictConfig) -> None:
             gpu_args.pop("val_check_interval")
 
     else:
-        gpu_args = dict(gpus=-1, accelerator='ddp', val_check_interval=cfg.val_freq)
+        gpu_args = dict(gpus=1, accelerator='gpu', val_check_interval=cfg.val_freq)
         # gpu_args = dict(gpus=1, accelerator='ddp', val_check_interval=cfg.val_freq)
 
         if gpu_args["val_check_interval"] > len(train_loader) // 4:

@@ -137,10 +137,15 @@ class ClusterLookup(nn.Module):
         super(ClusterLookup, self).__init__()
         self.n_classes = n_classes
         self.dim = dim
+        # torch.nn.Parameter是继承自torch.Tensor的子类，其主要作用是作为nn.Module中的可训练参数使用。
+        # 它与torch.Tensor的区别就是nn.Parameter会自动被认为是module的可训练参数，即加入到parameter()这个迭代器中去；
+        # 而module中非nn.Parameter()的普通tensor是不在parameter中的。
         self.clusters = torch.nn.Parameter(torch.randn(n_classes, dim))
 
     def reset_parameters(self):
         with torch.no_grad():
+            # copy_同样将源张量中的数据复制到目标张量（数据不共享），
+            # 其device、dtype和requires_grad一般都保留目标张量的设定，仅仅进行数据复制，同时其支持broadcast操作
             self.clusters.copy_(torch.randn(self.n_classes, self.dim))
 
     def forward(self, x, alpha, log_probs=False):

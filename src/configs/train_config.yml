@@ -6,9 +6,9 @@ azureml_logging: True
 submitting_to_aml: False
 
 # Loader params
-num_workers: 24
-max_steps: 5000
-batch_size: 16
+num_workers: 8
+max_steps: 50000
+batch_size: 64
 
 num_neighbors: 7
 dataset_name: "cocostuff27"
