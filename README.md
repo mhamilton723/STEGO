@@ -87,9 +87,10 @@ One can change the evaluation parameters and model by editing [`STEGO/src/config
 
 ## Training
 
-To train STEGO from scratch, please first generate the KNN indices for the datasets of interest:
+To train STEGO from scratch, please first generate the KNN indices for the datasets of interest. Note that this requires generating a cropped dataset first, and you may need to modify `crop datasets.py` to specify the dataset that you are cropping:
 
 ```shell script
+python crop_datasets.py
 python precompute_knns.py
 ```
 
