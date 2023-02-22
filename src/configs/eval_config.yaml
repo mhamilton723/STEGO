@@ -1,5 +1,5 @@
 output_root: '../'
-pytorch_data_dir: '/Users/mclapp/ml/pytorch_data/'
+pytorch_data_dir: '/datadrive/pytorch-data/'
 experiment_name: "cocostuff"
 res: 320
 batch_size: 8

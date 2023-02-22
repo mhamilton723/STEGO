@@ -7,7 +7,7 @@ from omegaconf import DictConfig
 from utils import *
 
 
-@hydra.main(config_path="configs", config_name="eval_config.yml", version_base="1.1")
+@hydra.main(config_path="configs", config_name="eval_config.yml")
 def my_app(cfg: DictConfig) -> None:
     pytorch_data_dir = Path(cfg.pytorch_data_dir)
     dataset_names = ["potsdam", "cityscapes", "cocostuff", "potsdamraw"]
@@ -24,7 +24,7 @@ def my_app(cfg: DictConfig) -> None:
             print("\n Downloading {}".format(dataset_name))
             wget.download(
                 url_base + dataset_name + ".zip",
-                str(pytorch_data_dir / f"{dataset_name}.zip"),
+                pytorch_data_dir / f"{dataset_name}.zip",
             )
         else:
             print("\n Found {}, skipping download".format(dataset_name))
