@@ -32,7 +32,7 @@ def entropy(p):
     return -(p * torch.log(p)).sum(dim=1)
 
 
-@hydra.main(config_name="config.yml")
+@hydra.main(config_name="config.yaml", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
     pytorch_data_dir = cfg.pytorch_data_dir

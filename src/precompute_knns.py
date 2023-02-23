@@ -21,7 +21,7 @@ def get_feats(model, loader):
     return torch.cat(all_feats, dim=0).contiguous()
 
 
-@hydra.main(config_path="configs", config_name="train_config.yml")
+@hydra.main(config_path="configs", config_name="train_config.yaml", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
     pytorch_data_dir = cfg.pytorch_data_dir
