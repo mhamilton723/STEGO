@@ -75,8 +75,10 @@ def my_app(cfg: DictConfig) -> None:
         run_picie = cfg.run_picie and model.cfg.dataset_name == "cocostuff27"
         if run_picie:
             picie_state = torch.load("../saved_models/picie_and_probes.pth")
-            picie = picie_state["model"].cuda()
-            picie_cluster_probe = picie_state["cluster_probe"].module.cuda()
+            # picie = picie_state["model"].cuda()
+            # picie_cluster_probe = picie_state["cluster_probe"].module.cuda()
+            picie = picie_state["model"]
+            picie_cluster_probe = picie_state["cluster_probe"].module
             picie_cluster_metrics = picie_state["cluster_metrics"]
 
         loader_crop = "center"
@@ -99,7 +101,8 @@ def my_app(cfg: DictConfig) -> None:
             collate_fn=flexible_collate,
         )
 
-        model.eval().cuda()
+        # model.eval().cuda()
+        model.eval()
 
         if cfg.use_ddp:
             par_model = torch.nn.DataParallel(model.net)
@@ -130,8 +133,10 @@ def my_app(cfg: DictConfig) -> None:
         with Pool(cfg.num_workers + 5) as pool:
             for i, batch in enumerate(tqdm(test_loader)):
                 with torch.no_grad():
-                    img = batch["img"].cuda()
-                    label = batch["label"].cuda()
+                    # img = batch["img"].cuda()
+                    # label = batch["label"].cuda()
+                    img = batch["img"]
+                    label = batch["label"]
 
                     feats, code1 = par_model(img)
                     feats, code2 = par_model(img.flip(dims=[3]))
@@ -145,12 +150,14 @@ def my_app(cfg: DictConfig) -> None:
                     cluster_probs = model.cluster_probe(code, 2, log_probs=True)
 
                     if cfg.run_crf:
-                        linear_preds = (
-                            batched_crf(pool, img, linear_probs).argmax(1).cuda()
-                        )
-                        cluster_preds = (
-                            batched_crf(pool, img, cluster_probs).argmax(1).cuda()
-                        )
+                        # linear_preds = (
+                        #     batched_crf(pool, img, linear_probs).argmax(1).cuda()
+                        # )
+                        # cluster_preds = (
+                        #     batched_crf(pool, img, cluster_probs).argmax(1).cuda()
+                        # )
+                        linear_preds = batched_crf(pool, img, linear_probs).argmax(1)
+                        cluster_preds = batched_crf(pool, img, cluster_probs).argmax(1)
                     else:
                         linear_preds = linear_probs.argmax(1)
                         cluster_preds = cluster_probs.argmax(1)
