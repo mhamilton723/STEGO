@@ -16,6 +16,7 @@ dependencies:
   # - cupy
 - pytorch-lightning
 - pip:
+  - mypy
   - matplotlib
   - psutil
   - tqdm
