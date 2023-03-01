@@ -4,16 +4,15 @@ channels:
 - conda-forge
 - menpo
 dependencies:
+- libffi=3.2.1
 - python=3.6.9
 - pip>=21.0,<22
 - pytorch==1.7.1
 - torchvision==0.8.2
 - torchaudio==0.7.2
-- cudatoolkit=11.0
-- nvidia-apex==0.1.0
 - scikit-image
 - opencv
-- cupy
+- pydensecrf
 - pytorch-lightning
 - pip:
   - matplotlib>=3.3,<3.4
@@ -31,7 +30,6 @@ dependencies:
   - seaborn
   - easydict
   - torchpq
-  - pydensecrf
   - setuptools==59.5.0
   - pyDeprecate==0.3.1
 name: stego
