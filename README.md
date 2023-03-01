@@ -1,4 +1,10 @@
 # STEGO: Unsupervised Semantic Segmentation by Distilling Feature Correspondences
+
+## Matt notes
+* using mambaforge x64 emulated on M1 Mac, all packages x64 to allow for old python version.
+* Had to add ancient libffi shared lib version to environment.yml to make python libraries work.
+
+## Original README below
 ### [Project Page](https://mhamilton.net/stego.html) | [Paper](https://arxiv.org/abs/2203.08414) | [Video](https://aka.ms/stego-video) | [ICLR 2022](https://iclr.cc/virtual/2022/poster/6068) 
 
 	
