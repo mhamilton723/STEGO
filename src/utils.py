@@ -1,7 +1,7 @@
 import collections
+import io
 import os
 from os.path import join
-import io
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,11 +13,14 @@ from PIL import Image
 from scipy.optimize import linear_sum_assignment
 from torch._six import string_classes
 from torch.utils.data import DataLoader
-from torch.utils.data._utils.collate import np_str_obj_array_pattern, default_collate_err_msg_format
+from torch.utils.data._utils.collate import (
+    default_collate_err_msg_format,
+    np_str_obj_array_pattern,
+)
+from torch.utils.tensorboard.summary import hparams
 from torchmetrics import Metric
 from torchvision import models
 from torchvision import transforms as T
-from torch.utils.tensorboard.summary import hparams
 
 
 def prep_for_plot(img, rescale=True, resize=None):
@@ -34,7 +37,7 @@ def prep_for_plot(img, rescale=True, resize=None):
 
 def add_plot(writer, name, step):
     buf = io.BytesIO()
-    plt.savefig(buf, format='jpeg', dpi=100)
+    plt.savefig(buf, format="jpeg", dpi=100)
     buf.seek(0)
     image = Image.open(buf)
     image = T.ToTensor()(image)
@@ -69,43 +72,55 @@ def one_hot_feats(labels, n_classes):
 def load_model(model_type, data_dir):
     if model_type == "robust_resnet50":
         model = models.resnet50(pretrained=False)
-        model_file = join(data_dir, 'imagenet_l2_3_0.pt')
+        model_file = join(data_dir, "imagenet_l2_3_0.pt")
         if not os.path.exists(model_file):
-            wget.download("http://6.869.csail.mit.edu/fa19/psets19/pset6/imagenet_l2_3_0.pt",
-                          model_file)
+            wget.download(
+                "http://6.869.csail.mit.edu/fa19/psets19/pset6/imagenet_l2_3_0.pt",
+                model_file,
+            )
         model_weights = torch.load(model_file)
-        model_weights_modified = {name.split('model.')[1]: value for name, value in model_weights['model'].items() if
-                                  'model' in name}
+        model_weights_modified = {
+            name.split("model.")[1]: value
+            for name, value in model_weights["model"].items()
+            if "model" in name
+        }
         model.load_state_dict(model_weights_modified)
         model = nn.Sequential(*list(model.children())[:-1])
     elif model_type == "densecl":
         model = models.resnet50(pretrained=False)
-        model_file = join(data_dir, 'densecl_r50_coco_1600ep.pth')
+        model_file = join(data_dir, "densecl_r50_coco_1600ep.pth")
         if not os.path.exists(model_file):
-            wget.download("https://cloudstor.aarnet.edu.au/plus/s/3GapXiWuVAzdKwJ/download",
-                          model_file)
+            wget.download(
+                "https://cloudstor.aarnet.edu.au/plus/s/3GapXiWuVAzdKwJ/download",
+                model_file,
+            )
         model_weights = torch.load(model_file)
         # model_weights_modified = {name.split('model.')[1]: value for name, value in model_weights['model'].items() if
         #                          'model' in name}
-        model.load_state_dict(model_weights['state_dict'], strict=False)
+        model.load_state_dict(model_weights["state_dict"], strict=False)
         model = nn.Sequential(*list(model.children())[:-1])
     elif model_type == "resnet50":
         model = models.resnet50(pretrained=True)
         model = nn.Sequential(*list(model.children())[:-1])
     elif model_type == "mocov2":
         model = models.resnet50(pretrained=False)
-        model_file = join(data_dir, 'moco_v2_800ep_pretrain.pth.tar')
+        model_file = join(data_dir, "moco_v2_800ep_pretrain.pth.tar")
         if not os.path.exists(model_file):
-            wget.download("https://dl.fbaipublicfiles.com/moco/moco_checkpoints/"
-                          "moco_v2_800ep/moco_v2_800ep_pretrain.pth.tar", model_file)
+            wget.download(
+                "https://dl.fbaipublicfiles.com/moco/moco_checkpoints/"
+                "moco_v2_800ep/moco_v2_800ep_pretrain.pth.tar",
+                model_file,
+            )
         checkpoint = torch.load(model_file)
         # rename moco pre-trained keys
-        state_dict = checkpoint['state_dict']
+        state_dict = checkpoint["state_dict"]
         for k in list(state_dict.keys()):
             # retain only encoder_q up to before the embedding layer
-            if k.startswith('module.encoder_q') and not k.startswith('module.encoder_q.fc'):
+            if k.startswith("module.encoder_q") and not k.startswith(
+                "module.encoder_q.fc"
+            ):
                 # remove prefix
-                state_dict[k[len("module.encoder_q."):]] = state_dict[k]
+                state_dict[k[len("module.encoder_q.") :]] = state_dict[k]
             # delete renamed or unused k
             del state_dict[k]
         msg = model.load_state_dict(state_dict, strict=False)
@@ -113,10 +128,14 @@ def load_model(model_type, data_dir):
         model = nn.Sequential(*list(model.children())[:-1])
     elif model_type == "densenet121":
         model = models.densenet121(pretrained=True)
-        model = nn.Sequential(*list(model.children())[:-1] + [nn.AdaptiveAvgPool2d((1, 1))])
+        model = nn.Sequential(
+            *list(model.children())[:-1] + [nn.AdaptiveAvgPool2d((1, 1))]
+        )
     elif model_type == "vgg11":
         model = models.vgg11(pretrained=True)
-        model = nn.Sequential(*list(model.children())[:-1] + [nn.AdaptiveAvgPool2d((1, 1))])
+        model = nn.Sequential(
+            *list(model.children())[:-1] + [nn.AdaptiveAvgPool2d((1, 1))]
+        )
     else:
         raise ValueError("No model: {} found".format(model_type))
 
@@ -173,14 +192,11 @@ def get_transform(res, is_label, crop_type):
     else:
         raise ValueError("Unknown Cropper {}".format(crop_type))
     if is_label:
-        return T.Compose([T.Resize(res, Image.NEAREST),
-                          cropper,
-                          ToTargetTensor()])
+        return T.Compose([T.Resize(res, Image.NEAREST), cropper, ToTargetTensor()])
     else:
-        return T.Compose([T.Resize(res, Image.NEAREST),
-                          cropper,
-                          T.ToTensor(),
-                          normalize])
+        return T.Compose(
+            [T.Resize(res, Image.NEAREST), cropper, T.ToTensor(), normalize]
+        )
 
 
 def _remove_axes(ax):
@@ -201,8 +217,14 @@ def remove_axes(axes):
 
 
 class UnsupervisedMetrics(Metric):
-    def __init__(self, prefix: str, n_classes: int, extra_clusters: int, compute_hungarian: bool,
-                 dist_sync_on_step=True):
+    def __init__(
+        self,
+        prefix: str,
+        n_classes: int,
+        extra_clusters: int,
+        compute_hungarian: bool,
+        dist_sync_on_step=True,
+    ):
         # call `self.add_state`for every internal state that is needed for the metrics computations
         # dist_reduce_fx indicates the function that should be used to reduce
         # state from multiple processes
@@ -212,53 +234,83 @@ class UnsupervisedMetrics(Metric):
         self.extra_clusters = extra_clusters
         self.compute_hungarian = compute_hungarian
         self.prefix = prefix
-        self.add_state("stats",
-                       default=torch.zeros(n_classes + self.extra_clusters, n_classes, dtype=torch.int64),
-                       dist_reduce_fx="sum")
+        self.add_state(
+            "stats",
+            default=torch.zeros(
+                n_classes + self.extra_clusters, n_classes, dtype=torch.int64
+            ),
+            dist_reduce_fx="sum",
+        )
 
     def update(self, preds: torch.Tensor, target: torch.Tensor):
         with torch.no_grad():
             actual = target.reshape(-1)
             preds = preds.reshape(-1)
-            mask = (actual >= 0) & (actual < self.n_classes) & (preds >= 0) & (preds < self.n_classes)
+            mask = (
+                (actual >= 0)
+                & (actual < self.n_classes)
+                & (preds >= 0)
+                & (preds < self.n_classes)
+            )
             actual = actual[mask]
             preds = preds[mask]
-            self.stats += torch.bincount(
-                (self.n_classes + self.extra_clusters) * actual + preds,
-                minlength=self.n_classes * (self.n_classes + self.extra_clusters)) \
-                .reshape(self.n_classes, self.n_classes + self.extra_clusters).t().to(self.stats.device)
+            self.stats += (
+                torch.bincount(
+                    (self.n_classes + self.extra_clusters) * actual + preds,
+                    minlength=self.n_classes * (self.n_classes + self.extra_clusters),
+                )
+                .reshape(self.n_classes, self.n_classes + self.extra_clusters)
+                .t()
+                .to(self.stats.device)
+            )
 
     def map_clusters(self, clusters):
         if self.extra_clusters == 0:
             return torch.tensor(self.assignments[1])[clusters]
         else:
-            missing = sorted(list(set(range(self.n_classes + self.extra_clusters)) - set(self.assignments[0])))
+            missing = sorted(
+                list(
+                    set(range(self.n_classes + self.extra_clusters))
+                    - set(self.assignments[0])
+                )
+            )
             cluster_to_class = self.assignments[1]
             for missing_entry in missing:
                 if missing_entry == cluster_to_class.shape[0]:
                     cluster_to_class = np.append(cluster_to_class, -1)
                 else:
-                    cluster_to_class = np.insert(cluster_to_class, missing_entry + 1, -1)
+                    cluster_to_class = np.insert(
+                        cluster_to_class, missing_entry + 1, -1
+                    )
             cluster_to_class = torch.tensor(cluster_to_class)
             return cluster_to_class[clusters]
 
     def compute(self):
         if self.compute_hungarian:
-            self.assignments = linear_sum_assignment(self.stats.detach().cpu(), maximize=True)
+            self.assignments = linear_sum_assignment(
+                self.stats.detach().cpu(), maximize=True
+            )
             # print(self.assignments)
             if self.extra_clusters == 0:
                 self.histogram = self.stats[np.argsort(self.assignments[1]), :]
             if self.extra_clusters > 0:
-                self.assignments_t = linear_sum_assignment(self.stats.detach().cpu().t(), maximize=True)
+                self.assignments_t = linear_sum_assignment(
+                    self.stats.detach().cpu().t(), maximize=True
+                )
                 histogram = self.stats[self.assignments_t[1], :]
-                missing = list(set(range(self.n_classes + self.extra_clusters)) - set(self.assignments[0]))
+                missing = list(
+                    set(range(self.n_classes + self.extra_clusters))
+                    - set(self.assignments[0])
+                )
                 new_row = self.stats[missing, :].sum(0, keepdim=True)
                 histogram = torch.cat([histogram, new_row], axis=0)
                 new_col = torch.zeros(self.n_classes + 1, 1, device=histogram.device)
                 self.histogram = torch.cat([histogram, new_col], axis=1)
         else:
-            self.assignments = (torch.arange(self.n_classes).unsqueeze(1),
-                                torch.arange(self.n_classes).unsqueeze(1))
+            self.assignments = (
+                torch.arange(self.n_classes).unsqueeze(1),
+                torch.arange(self.n_classes).unsqueeze(1),
+            )
             self.histogram = self.stats
 
         tp = torch.diag(self.histogram)
@@ -269,8 +321,10 @@ class UnsupervisedMetrics(Metric):
         prc = tp / (tp + fn)
         opc = torch.sum(tp) / torch.sum(self.histogram)
 
-        metric_dict = {self.prefix + "mIoU": iou[~torch.isnan(iou)].mean().item(),
-                       self.prefix + "Accuracy": opc.item()}
+        metric_dict = {
+            self.prefix + "mIoU": iou[~torch.isnan(iou)].mean().item(),
+            self.prefix + "Accuracy": opc.item(),
+        }
         return {k: 100 * v for k, v in metric_dict.items()}
 
 
@@ -291,9 +345,12 @@ def flexible_collate(batch):
             return torch.stack(batch, 0, out=out)
         except RuntimeError:
             return batch
-    elif elem_type.__module__ == 'numpy' and elem_type.__name__ != 'str_' \
-            and elem_type.__name__ != 'string_':
-        if elem_type.__name__ == 'ndarray' or elem_type.__name__ == 'memmap':
+    elif (
+        elem_type.__module__ == "numpy"
+        and elem_type.__name__ != "str_"
+        and elem_type.__name__ != "string_"
+    ):
+        if elem_type.__name__ == "ndarray" or elem_type.__name__ == "memmap":
             # array of string classes and object
             if np_str_obj_array_pattern.search(elem.dtype.str) is not None:
                 raise TypeError(default_collate_err_msg_format.format(elem.dtype))
@@ -309,14 +366,14 @@ def flexible_collate(batch):
         return batch
     elif isinstance(elem, collections.abc.Mapping):
         return {key: flexible_collate([d[key] for d in batch]) for key in elem}
-    elif isinstance(elem, tuple) and hasattr(elem, '_fields'):  # namedtuple
+    elif isinstance(elem, tuple) and hasattr(elem, "_fields"):  # namedtuple
         return elem_type(*(flexible_collate(samples) for samples in zip(*batch)))
     elif isinstance(elem, collections.abc.Sequence):
         # check to make sure that the elements in batch have consistent size
         it = iter(batch)
         elem_size = len(next(it))
         if not all(len(elem) == elem_size for elem in it):
-            raise RuntimeError('each element in list of batch should be of equal size')
+            raise RuntimeError("each element in list of batch should be of equal size")
         transposed = zip(*batch)
         return [flexible_collate(samples) for samples in transposed]
 
