@@ -1,5 +1,6 @@
+# See https://github.com/mhamilton723/STEGO/issues/16#issuecomment-1168772107
 from collections import defaultdict
-from multiprocessing import Pool
+from multiprocessing import Pool, get_context
 
 import hydra
 import seaborn as sns
@@ -13,6 +14,9 @@ from data import *
 from modules import *
 from train_segmentation import LitUnsupervisedSegmenter, get_class_labels, prep_for_plot
 
+# Hack to try and get multiprocessing to work, but makes compute only happen
+#   on one processor!
+torch.set_num_threads(1)
 torch.multiprocessing.set_sharing_strategy("file_system")
 
 
@@ -74,7 +78,9 @@ def my_app(cfg: DictConfig) -> None:
 
         run_picie = cfg.run_picie and model.cfg.dataset_name == "cocostuff27"
         if run_picie:
-            picie_state = torch.load("../saved_models/picie_and_probes.pth")
+            picie_state = torch.load(
+                "../saved_models/picie_and_probes.pth", map_location=torch.device("cpu")
+            )
             # picie = picie_state["model"].cuda()
             # picie_cluster_probe = picie_state["cluster_probe"].module.cuda()
             picie = picie_state["model"]
@@ -99,6 +105,7 @@ def my_app(cfg: DictConfig) -> None:
             num_workers=cfg.num_workers,
             pin_memory=True,
             collate_fn=flexible_collate,
+            multiprocessing_context=torch.multiprocessing.get_context("spawn"),
         )
 
         # model.eval().cuda()
@@ -130,6 +137,9 @@ def my_app(cfg: DictConfig) -> None:
         )
 
         saved_data = defaultdict(list)
+        # See https://github.com/mhamilton723/STEGO/issues/16#issuecomment-1168772107
+        #   But didn't help...(?)
+        # with get_context("spawn").Pool(cfg.num_workers + 5) as pool:
         with Pool(cfg.num_workers + 5) as pool:
             for i, batch in enumerate(tqdm(test_loader)):
                 with torch.no_grad():
