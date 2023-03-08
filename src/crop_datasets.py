@@ -1,16 +1,18 @@
 import os
+from os.path import join
 
 import hydra
 import torch
 from omegaconf import DictConfig, OmegaConf
+from PIL import Image
 from pytorch_lightning.utilities.seed import seed_everything
 from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms as T
 from torchvision.transforms.functional import _get_image_size, crop, five_crop
 from tqdm import tqdm
 
 from data import ContrastiveSegDataset
-from modules import *
-from utils import prep_args
+from utils import ToTargetTensor, prep_args
 
 
 def _random_crops(img, size, seed, n):
