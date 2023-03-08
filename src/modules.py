@@ -5,7 +5,7 @@ import dino.vision_transformer as vits
 from utils import *
 
 
-class LambdaLayer(nn.Module):
+class LambdaLayer(torch.nn.Module):
     def __init__(self, lambd):
         super(LambdaLayer, self).__init__()
         self.lambd = lambd
@@ -14,7 +14,7 @@ class LambdaLayer(nn.Module):
         return self.lambd(x)
 
 
-class DinoFeaturizer(nn.Module):
+class DinoFeaturizer(torch.nn.Module):
     def __init__(self, dim, cfg):
         super().__init__()
         self.cfg = cfg
@@ -132,7 +132,7 @@ class DinoFeaturizer(nn.Module):
             return image_feat, code
 
 
-class ResizeAndClassify(nn.Module):
+class ResizeAndClassify(torch.nn.Module):
     def __init__(self, dim: int, size: int, n_classes: int):
         super(ResizeAndClassify, self).__init__()
         self.size = size
@@ -146,7 +146,7 @@ class ResizeAndClassify(nn.Module):
         )
 
 
-class ClusterLookup(nn.Module):
+class ClusterLookup(torch.nn.Module):
     def __init__(self, dim: int, n_classes: int):
         super(ClusterLookup, self).__init__()
         self.n_classes = n_classes
@@ -178,7 +178,7 @@ class ClusterLookup(nn.Module):
             return cluster_loss, cluster_probs
 
 
-class FeaturePyramidNet(nn.Module):
+class FeaturePyramidNet(torch.nn.Module):
     @staticmethod
     def _helper(x):
         # TODO remove this hard coded 56
@@ -285,7 +285,7 @@ class FeaturePyramidNet(nn.Module):
         return low_res_feats, clusters
 
 
-class DoubleConv(nn.Module):
+class DoubleConv(torch.nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
 
     def __init__(self, in_channels, out_channels, mid_channels=None):
@@ -293,12 +293,12 @@ class DoubleConv(nn.Module):
         if not mid_channels:
             mid_channels = out_channels
         self.double_conv = nn.Sequential(
-            nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1),
-            nn.BatchNorm2d(mid_channels),
-            nn.ReLU(),
-            nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(),
+            torch.nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1),
+            torch.nn.BatchNorm2d(mid_channels),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1),
+            torch.nn.BatchNorm2d(out_channels),
+            torch.nn.ReLU(),
         )
 
     def forward(self, x):
@@ -350,7 +350,7 @@ def sample_nonzero_locations(t, target_size):
     return torch.flip(coords, dims=[-1])
 
 
-class ContrastiveCorrelationLoss(nn.Module):
+class ContrastiveCorrelationLoss(torch.nn.Module):
     def __init__(self, cfg):
         super(ContrastiveCorrelationLoss, self).__init__()
         self.cfg = cfg
@@ -453,7 +453,7 @@ class ContrastiveCorrelationLoss(nn.Module):
         )
 
 
-class Decoder(nn.Module):
+class Decoder(torch.nn.Module):
     def __init__(self, code_channels, feat_channels):
         super().__init__()
         self.linear = torch.nn.Conv2d(code_channels, feat_channels, (1, 1))
@@ -490,7 +490,7 @@ class NetWithActivations(torch.nn.Module):
         return activations
 
 
-class ContrastiveCRFLoss(nn.Module):
+class ContrastiveCRFLoss(torch.nn.Module):
     def __init__(self, n_samples, alpha, beta, gamma, w1, w2, shift):
         super(ContrastiveCRFLoss, self).__init__()
         self.alpha = alpha
