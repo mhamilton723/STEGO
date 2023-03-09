@@ -6,8 +6,7 @@ import numpy as np
 import torch.multiprocessing
 from PIL import Image
 from scipy.io import loadmat
-from torch.utils.data import DataLoader
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets.cityscapes import Cityscapes
 from torchvision.transforms.functional import to_pil_image
 from tqdm import tqdm
@@ -41,34 +40,36 @@ def create_pascal_label_colormap():
 
 
 def create_cityscapes_colormap():
-    colors = [(128, 64, 128),
-              (244, 35, 232),
-              (250, 170, 160),
-              (230, 150, 140),
-              (70, 70, 70),
-              (102, 102, 156),
-              (190, 153, 153),
-              (180, 165, 180),
-              (150, 100, 100),
-              (150, 120, 90),
-              (153, 153, 153),
-              (153, 153, 153),
-              (250, 170, 30),
-              (220, 220, 0),
-              (107, 142, 35),
-              (152, 251, 152),
-              (70, 130, 180),
-              (220, 20, 60),
-              (255, 0, 0),
-              (0, 0, 142),
-              (0, 0, 70),
-              (0, 60, 100),
-              (0, 0, 90),
-              (0, 0, 110),
-              (0, 80, 100),
-              (0, 0, 230),
-              (119, 11, 32),
-              (0, 0, 0)]
+    colors = [
+        (128, 64, 128),
+        (244, 35, 232),
+        (250, 170, 160),
+        (230, 150, 140),
+        (70, 70, 70),
+        (102, 102, 156),
+        (190, 153, 153),
+        (180, 165, 180),
+        (150, 100, 100),
+        (150, 120, 90),
+        (153, 153, 153),
+        (153, 153, 153),
+        (250, 170, 30),
+        (220, 220, 0),
+        (107, 142, 35),
+        (152, 251, 152),
+        (70, 130, 180),
+        (220, 20, 60),
+        (255, 0, 0),
+        (0, 0, 142),
+        (0, 0, 70),
+        (0, 60, 100),
+        (0, 0, 90),
+        (0, 0, 110),
+        (0, 80, 100),
+        (0, 0, 230),
+        (119, 11, 32),
+        (0, 0, 0),
+    ]
     return np.array(colors)
 
 
@@ -131,7 +132,7 @@ class Potsdam(Dataset):
             # "train": ["unlabelled_train.txt"],
             "val": ["labelled_test.txt"],
             "train+val": ["labelled_train.txt", "labelled_test.txt"],
-            "all": ["all.txt"]
+            "all": ["all.txt"],
         }
         assert self.split in split_files.keys()
 
@@ -141,16 +142,22 @@ class Potsdam(Dataset):
                 self.files.extend(fn.rstrip() for fn in f.readlines())
 
         self.coarse_labels = coarse_labels
-        self.fine_to_coarse = {0: 0, 4: 0,  # roads and cars
-                               1: 1, 5: 1,  # buildings and clutter
-                               2: 2, 3: 2,  # vegetation and trees
-                               255: -1
-                               }
+        self.fine_to_coarse = {
+            0: 0,
+            4: 0,  # roads and cars
+            1: 1,
+            5: 1,  # buildings and clutter
+            2: 2,
+            3: 2,  # vegetation and trees
+            255: -1,
+        }
 
     def __getitem__(self, index):
         image_id = self.files[index]
         img = loadmat(join(self.root, "imgs", image_id + ".mat"))["img"]
-        img = to_pil_image(torch.from_numpy(img).permute(2, 0, 1)[:3])  # TODO add ir channel back
+        img = to_pil_image(
+            torch.from_numpy(img).permute(2, 0, 1)[:3]
+        )  # TODO add ir channel back
         try:
             label = loadmat(join(self.root, "gt", image_id + ".mat"))["gt"]
             label = to_pil_image(torch.from_numpy(label).unsqueeze(-1).permute(2, 0, 1))
@@ -192,16 +199,22 @@ class PotsdamRaw(Dataset):
                     self.files.append("{}_{}_{}.mat".format(im_num, i_h, i_w))
 
         self.coarse_labels = coarse_labels
-        self.fine_to_coarse = {0: 0, 4: 0,  # roads and cars
-                               1: 1, 5: 1,  # buildings and clutter
-                               2: 2, 3: 2,  # vegetation and trees
-                               255: -1
-                               }
+        self.fine_to_coarse = {
+            0: 0,
+            4: 0,  # roads and cars
+            1: 1,
+            5: 1,  # buildings and clutter
+            2: 2,
+            3: 2,  # vegetation and trees
+            255: -1,
+        }
 
     def __getitem__(self, index):
         image_id = self.files[index]
         img = loadmat(join(self.root, "imgs", image_id))["img"]
-        img = to_pil_image(torch.from_numpy(img).permute(2, 0, 1)[:3])  # TODO add ir channel back
+        img = to_pil_image(
+            torch.from_numpy(img).permute(2, 0, 1)[:3]
+        )  # TODO add ir channel back
         try:
             label = loadmat(join(self.root, "gt", image_id))["gt"]
             label = to_pil_image(torch.from_numpy(label).unsqueeze(-1).permute(2, 0, 1))
@@ -230,8 +243,16 @@ class PotsdamRaw(Dataset):
 
 
 class Coco(Dataset):
-    def __init__(self, root, image_set, transform, target_transform,
-                 coarse_labels, exclude_things, subset=None):
+    def __init__(
+        self,
+        root,
+        image_set,
+        transform,
+        target_transform,
+        coarse_labels,
+        exclude_things,
+        subset=None,
+    ):
         super(Coco, self).__init__()
         self.split = image_set
         self.root = join(root, "cocostuff")
@@ -252,7 +273,7 @@ class Coco(Dataset):
         split_dirs = {
             "train": ["train2017"],
             "val": ["val2017"],
-            "train+val": ["train2017", "val2017"]
+            "train+val": ["train2017", "val2017"],
         }
 
         self.image_files = []
@@ -261,32 +282,199 @@ class Coco(Dataset):
             with open(join(self.root, "curated", split_dir, self.image_list), "r") as f:
                 img_ids = [fn.rstrip() for fn in f.readlines()]
                 for img_id in img_ids:
-                    self.image_files.append(join(self.root, "images", split_dir, img_id + ".jpg"))
-                    self.label_files.append(join(self.root, "annotations", split_dir, img_id + ".png"))
+                    self.image_files.append(
+                        join(self.root, "images", split_dir, img_id + ".jpg")
+                    )
+                    self.label_files.append(
+                        join(self.root, "annotations", split_dir, img_id + ".png")
+                    )
 
-        self.fine_to_coarse = {0: 9, 1: 11, 2: 11, 3: 11, 4: 11, 5: 11, 6: 11, 7: 11, 8: 11, 9: 8, 10: 8, 11: 8, 12: 8,
-                               13: 8, 14: 8, 15: 7, 16: 7, 17: 7, 18: 7, 19: 7, 20: 7, 21: 7, 22: 7, 23: 7, 24: 7,
-                               25: 6, 26: 6, 27: 6, 28: 6, 29: 6, 30: 6, 31: 6, 32: 6, 33: 10, 34: 10, 35: 10, 36: 10,
-                               37: 10, 38: 10, 39: 10, 40: 10, 41: 10, 42: 10, 43: 5, 44: 5, 45: 5, 46: 5, 47: 5, 48: 5,
-                               49: 5, 50: 5, 51: 2, 52: 2, 53: 2, 54: 2, 55: 2, 56: 2, 57: 2, 58: 2, 59: 2, 60: 2,
-                               61: 3, 62: 3, 63: 3, 64: 3, 65: 3, 66: 3, 67: 3, 68: 3, 69: 3, 70: 3, 71: 0, 72: 0,
-                               73: 0, 74: 0, 75: 0, 76: 0, 77: 1, 78: 1, 79: 1, 80: 1, 81: 1, 82: 1, 83: 4, 84: 4,
-                               85: 4, 86: 4, 87: 4, 88: 4, 89: 4, 90: 4, 91: 17, 92: 17, 93: 22, 94: 20, 95: 20, 96: 22,
-                               97: 15, 98: 25, 99: 16, 100: 13, 101: 12, 102: 12, 103: 17, 104: 17, 105: 23, 106: 15,
-                               107: 15, 108: 17, 109: 15, 110: 21, 111: 15, 112: 25, 113: 13, 114: 13, 115: 13, 116: 13,
-                               117: 13, 118: 22, 119: 26, 120: 14, 121: 14, 122: 15, 123: 22, 124: 21, 125: 21, 126: 24,
-                               127: 20, 128: 22, 129: 15, 130: 17, 131: 16, 132: 15, 133: 22, 134: 24, 135: 21, 136: 17,
-                               137: 25, 138: 16, 139: 21, 140: 17, 141: 22, 142: 16, 143: 21, 144: 21, 145: 25, 146: 21,
-                               147: 26, 148: 21, 149: 24, 150: 20, 151: 17, 152: 14, 153: 21, 154: 26, 155: 15, 156: 23,
-                               157: 20, 158: 21, 159: 24, 160: 15, 161: 24, 162: 22, 163: 25, 164: 15, 165: 20, 166: 17,
-                               167: 17, 168: 22, 169: 14, 170: 18, 171: 18, 172: 18, 173: 18, 174: 18, 175: 18, 176: 18,
-                               177: 26, 178: 26, 179: 19, 180: 19, 181: 24}
+        self.fine_to_coarse = {
+            0: 9,
+            1: 11,
+            2: 11,
+            3: 11,
+            4: 11,
+            5: 11,
+            6: 11,
+            7: 11,
+            8: 11,
+            9: 8,
+            10: 8,
+            11: 8,
+            12: 8,
+            13: 8,
+            14: 8,
+            15: 7,
+            16: 7,
+            17: 7,
+            18: 7,
+            19: 7,
+            20: 7,
+            21: 7,
+            22: 7,
+            23: 7,
+            24: 7,
+            25: 6,
+            26: 6,
+            27: 6,
+            28: 6,
+            29: 6,
+            30: 6,
+            31: 6,
+            32: 6,
+            33: 10,
+            34: 10,
+            35: 10,
+            36: 10,
+            37: 10,
+            38: 10,
+            39: 10,
+            40: 10,
+            41: 10,
+            42: 10,
+            43: 5,
+            44: 5,
+            45: 5,
+            46: 5,
+            47: 5,
+            48: 5,
+            49: 5,
+            50: 5,
+            51: 2,
+            52: 2,
+            53: 2,
+            54: 2,
+            55: 2,
+            56: 2,
+            57: 2,
+            58: 2,
+            59: 2,
+            60: 2,
+            61: 3,
+            62: 3,
+            63: 3,
+            64: 3,
+            65: 3,
+            66: 3,
+            67: 3,
+            68: 3,
+            69: 3,
+            70: 3,
+            71: 0,
+            72: 0,
+            73: 0,
+            74: 0,
+            75: 0,
+            76: 0,
+            77: 1,
+            78: 1,
+            79: 1,
+            80: 1,
+            81: 1,
+            82: 1,
+            83: 4,
+            84: 4,
+            85: 4,
+            86: 4,
+            87: 4,
+            88: 4,
+            89: 4,
+            90: 4,
+            91: 17,
+            92: 17,
+            93: 22,
+            94: 20,
+            95: 20,
+            96: 22,
+            97: 15,
+            98: 25,
+            99: 16,
+            100: 13,
+            101: 12,
+            102: 12,
+            103: 17,
+            104: 17,
+            105: 23,
+            106: 15,
+            107: 15,
+            108: 17,
+            109: 15,
+            110: 21,
+            111: 15,
+            112: 25,
+            113: 13,
+            114: 13,
+            115: 13,
+            116: 13,
+            117: 13,
+            118: 22,
+            119: 26,
+            120: 14,
+            121: 14,
+            122: 15,
+            123: 22,
+            124: 21,
+            125: 21,
+            126: 24,
+            127: 20,
+            128: 22,
+            129: 15,
+            130: 17,
+            131: 16,
+            132: 15,
+            133: 22,
+            134: 24,
+            135: 21,
+            136: 17,
+            137: 25,
+            138: 16,
+            139: 21,
+            140: 17,
+            141: 22,
+            142: 16,
+            143: 21,
+            144: 21,
+            145: 25,
+            146: 21,
+            147: 26,
+            148: 21,
+            149: 24,
+            150: 20,
+            151: 17,
+            152: 14,
+            153: 21,
+            154: 26,
+            155: 15,
+            156: 23,
+            157: 20,
+            158: 21,
+            159: 24,
+            160: 15,
+            161: 24,
+            162: 22,
+            163: 25,
+            164: 15,
+            165: 20,
+            166: 17,
+            167: 17,
+            168: 22,
+            169: 14,
+            170: 18,
+            171: 18,
+            172: 18,
+            173: 18,
+            174: 18,
+            175: 18,
+            176: 18,
+            177: 26,
+            178: 26,
+            179: 19,
+            180: 19,
+            181: 24,
+        }
 
-        self._label_names = [
-            "ground-stuff",
-            "plant-stuff",
-            "sky-stuff",
-        ]
+        self._label_names = ["ground-stuff", "plant-stuff", "sky-stuff"]
         self.cocostuff3_coarse_classes = [23, 22, 21]
         self.first_stuff_index = 12
 
@@ -314,7 +502,11 @@ class Coco(Dataset):
             return img, coarser_labels, coarser_labels >= 0
         else:
             if self.exclude_things:
-                return img, coarse_label - self.first_stuff_index, (coarse_label >= self.first_stuff_index)
+                return (
+                    img,
+                    coarse_label - self.first_stuff_index,
+                    (coarse_label >= self.first_stuff_index),
+                )
             else:
                 return img, coarse_label, coarse_label >= 0
 
@@ -335,11 +527,14 @@ class CityscapesSeg(Dataset):
         else:
             our_image_set = image_set
             mode = "fine"
-        self.inner_loader = Cityscapes(self.root, our_image_set,
-                                       mode=mode,
-                                       target_type="semantic",
-                                       transform=None,
-                                       target_transform=None)
+        self.inner_loader = Cityscapes(
+            self.root,
+            our_image_set,
+            mode=mode,
+            target_type="semantic",
+            transform=None,
+            target_transform=None,
+        )
         self.transform = transform
         self.target_transform = target_transform
         self.first_nonvoid = 7
@@ -368,11 +563,22 @@ class CityscapesSeg(Dataset):
 
 
 class CroppedDataset(Dataset):
-    def __init__(self, root, dataset_name, crop_type, crop_ratio, image_set, transform, target_transform):
+    def __init__(
+        self,
+        root,
+        dataset_name,
+        crop_type,
+        crop_ratio,
+        image_set,
+        transform,
+        target_transform,
+    ):
         super(CroppedDataset, self).__init__()
         self.dataset_name = dataset_name
         self.split = image_set
-        self.root = join(root, "cropped", "{}_{}_crop_{}".format(dataset_name, crop_type, crop_ratio))
+        self.root = join(
+            root, "cropped", "{}_{}_crop_{}".format(dataset_name, crop_type, crop_ratio)
+        )
         self.transform = transform
         self.target_transform = target_transform
         self.img_dir = join(self.root, "img", self.split)
@@ -381,7 +587,7 @@ class CroppedDataset(Dataset):
         assert self.num_images == len(os.listdir(self.label_dir))
 
     def __getitem__(self, index):
-        image = Image.open(join(self.img_dir, "{}.jpg".format(index))).convert('RGB')
+        image = Image.open(join(self.img_dir, "{}.jpg".format(index))).convert("RGB")
         target = Image.open(join(self.label_dir, "{}.png".format(index)))
 
         seed = np.random.randint(2147483647)
@@ -401,7 +607,6 @@ class CroppedDataset(Dataset):
 
 
 class MaterializedDataset(Dataset):
-
     def __init__(self, ds):
         self.ds = ds
         self.materialized = []
@@ -417,24 +622,25 @@ class MaterializedDataset(Dataset):
 
 
 class ContrastiveSegDataset(Dataset):
-    def __init__(self,
-                 pytorch_data_dir,
-                 dataset_name,
-                 crop_type,
-                 image_set,
-                 transform,
-                 target_transform,
-                 cfg,
-                 aug_geometric_transform=None,
-                 aug_photometric_transform=None,
-                 num_neighbors=5,
-                 compute_knns=False,
-                 mask=False,
-                 pos_labels=False,
-                 pos_images=False,
-                 extra_transform=None,
-                 model_type_override=None
-                 ):
+    def __init__(
+        self,
+        pytorch_data_dir,
+        dataset_name,
+        crop_type,
+        image_set,
+        transform,
+        target_transform,
+        cfg,
+        aug_geometric_transform=None,
+        aug_photometric_transform=None,
+        num_neighbors=5,
+        compute_knns=False,
+        mask=False,
+        pos_labels=False,
+        pos_images=False,
+        extra_transform=None,
+        model_type_override=None,
+    ):
         super(ContrastiveSegDataset).__init__()
         self.num_neighbors = num_neighbors
         self.image_set = image_set
@@ -463,7 +669,11 @@ class ContrastiveSegDataset(Dataset):
         elif dataset_name == "cityscapes" and crop_type is not None:
             self.n_classes = 27
             dataset_class = CroppedDataset
-            extra_args = dict(dataset_name="cityscapes", crop_type=crop_type, crop_ratio=cfg.crop_ratio)
+            extra_args = dict(
+                dataset_name="cityscapes",
+                crop_type=crop_type,
+                crop_ratio=cfg.crop_ratio,
+            )
         elif dataset_name == "cocostuff3":
             self.n_classes = 3
             dataset_class = Coco
@@ -475,7 +685,11 @@ class ContrastiveSegDataset(Dataset):
         elif dataset_name == "cocostuff27" and crop_type is not None:
             self.n_classes = 27
             dataset_class = CroppedDataset
-            extra_args = dict(dataset_name="cocostuff27", crop_type=cfg.crop_type, crop_ratio=cfg.crop_ratio)
+            extra_args = dict(
+                dataset_name="cocostuff27",
+                crop_type=cfg.crop_type,
+                crop_ratio=cfg.crop_ratio,
+            )
         elif dataset_name == "cocostuff27" and crop_type is None:
             self.n_classes = 27
             dataset_class = Coco
@@ -492,19 +706,32 @@ class ContrastiveSegDataset(Dataset):
             root=pytorch_data_dir,
             image_set=self.image_set,
             transform=transform,
-            target_transform=target_transform, **extra_args)
+            target_transform=target_transform,
+            **extra_args
+        )
 
         if model_type_override is not None:
             model_type = model_type_override
         else:
             model_type = cfg.model_type
 
-        nice_dataset_name = cfg.dir_dataset_name if dataset_name == "directory" else dataset_name
-        feature_cache_file = join(pytorch_data_dir, "nns", "nns_{}_{}_{}_{}_{}.npz".format(
-            model_type, nice_dataset_name, image_set, crop_type, cfg.res))
+        nice_dataset_name = (
+            cfg.dir_dataset_name if dataset_name == "directory" else dataset_name
+        )
+        feature_cache_file = join(
+            pytorch_data_dir,
+            "nns",
+            "nns_{}_{}_{}_{}_{}.npz".format(
+                model_type, nice_dataset_name, image_set, crop_type, cfg.res
+            ),
+        )
         if pos_labels or pos_images:
             if not os.path.exists(feature_cache_file) or compute_knns:
-                raise ValueError("could not find nn file {} please run precompute_knns".format(feature_cache_file))
+                raise ValueError(
+                    "could not find nn file {} please run precompute_knns".format(
+                        feature_cache_file
+                    )
+                )
             else:
                 loaded = np.load(feature_cache_file)
                 self.nns = loaded["nns"]
@@ -521,14 +748,20 @@ class ContrastiveSegDataset(Dataset):
         pack = self.dataset[ind]
 
         if self.pos_images or self.pos_labels:
-            ind_pos = self.nns[ind][torch.randint(low=1, high=self.num_neighbors + 1, size=[]).item()]
+            ind_pos = self.nns[ind][
+                torch.randint(low=1, high=self.num_neighbors + 1, size=[]).item()
+            ]
             pack_pos = self.dataset[ind_pos]
 
         seed = np.random.randint(2147483647)  # make a seed with numpy generator
 
         self._set_seed(seed)
-        coord_entries = torch.meshgrid([torch.linspace(-1, 1, pack[0].shape[1]),
-                                        torch.linspace(-1, 1, pack[0].shape[2])])
+        coord_entries = torch.meshgrid(
+            [
+                torch.linspace(-1, 1, pack[0].shape[1]),
+                torch.linspace(-1, 1, pack[0].shape[2]),
+            ]
+        )
         coord = torch.cat([t.unsqueeze(0) for t in coord_entries], 0)
 
         if self.extra_transform is not None:
@@ -554,7 +787,9 @@ class ContrastiveSegDataset(Dataset):
             ret["mask_pos"] = pack_pos[2]
 
         if self.aug_photometric_transform is not None:
-            img_aug = self.aug_photometric_transform(self.aug_geometric_transform(pack[0]))
+            img_aug = self.aug_photometric_transform(
+                self.aug_geometric_transform(pack[0])
+            )
 
             self._set_seed(seed)
             coord_aug = self.aug_geometric_transform(coord)
