@@ -4,7 +4,7 @@ import hydra
 import wget
 from omegaconf import DictConfig
 
-from utils import *
+from utils import prep_args
 
 
 @hydra.main(config_path="configs", config_name="eval_config.yaml", version_base="1.1")
