@@ -2,7 +2,6 @@ import torch
 import torch.nn.functional as F
 
 import dino.vision_transformer as vits
-from utils import *
 
 
 class LambdaLayer(torch.nn.Module):
@@ -169,11 +168,11 @@ class ClusterLookup(torch.nn.Module):
                 .to(torch.float32)
             )
         else:
-            cluster_probs = nn.functional.softmax(inner_products * alpha, dim=1)
+            cluster_probs = torch.nn.functional.softmax(inner_products * alpha, dim=1)
 
         cluster_loss = -(cluster_probs * inner_products).sum(1).mean()
         if log_probs:
-            return nn.functional.log_softmax(inner_products * alpha, dim=1)
+            return torch.nn.functional.log_softmax(inner_products * alpha, dim=1)
         else:
             return cluster_loss, cluster_probs
 
@@ -212,7 +211,9 @@ class FeaturePyramidNet(torch.nn.Module):
         self.continuous = continuous
         self.n_feats = self.dim
 
-        self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
+        self.up = torch.nn.Upsample(
+            scale_factor=2, mode="bilinear", align_corners=False
+        )
 
         assert granularity in {1, 2, 3, 4}
         self.cluster1 = self.make_clusterer(self.feat_channels[0])
@@ -292,7 +293,7 @@ class DoubleConv(torch.nn.Module):
         super().__init__()
         if not mid_channels:
             mid_channels = out_channels
-        self.double_conv = nn.Sequential(
+        self.double_conv = torch.nn.Sequential(
             torch.nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1),
             torch.nn.BatchNorm2d(mid_channels),
             torch.nn.ReLU(),
@@ -472,7 +473,7 @@ class Decoder(torch.nn.Module):
 class NetWithActivations(torch.nn.Module):
     def __init__(self, model, layer_nums):
         super(NetWithActivations, self).__init__()
-        self.layers = nn.ModuleList(model.children())
+        self.layers = torch.nn.ModuleList(model.children())
         self.layer_nums = []
         for l in layer_nums:
             if l < 0:
