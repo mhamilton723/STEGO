@@ -6,7 +6,6 @@ from os.path import join
 import matplotlib.pyplot as plt
 import numpy as np
 import torch.multiprocessing
-import torch.nn as nn
 import torch.nn.functional as F
 import wget
 from PIL import Image
@@ -85,7 +84,7 @@ def load_model(model_type, data_dir):
             if "model" in name
         }
         model.load_state_dict(model_weights_modified)
-        model = nn.Sequential(*list(model.children())[:-1])
+        model = torch.nn.Sequential(*list(model.children())[:-1])
     elif model_type == "densecl":
         model = models.resnet50(pretrained=False)
         model_file = join(data_dir, "densecl_r50_coco_1600ep.pth")
@@ -98,10 +97,10 @@ def load_model(model_type, data_dir):
         # model_weights_modified = {name.split('model.')[1]: value for name, value in model_weights['model'].items() if
         #                          'model' in name}
         model.load_state_dict(model_weights["state_dict"], strict=False)
-        model = nn.Sequential(*list(model.children())[:-1])
+        model = torch.nn.Sequential(*list(model.children())[:-1])
     elif model_type == "resnet50":
         model = models.resnet50(pretrained=True)
-        model = nn.Sequential(*list(model.children())[:-1])
+        model = torch.nn.Sequential(*list(model.children())[:-1])
     elif model_type == "mocov2":
         model = models.resnet50(pretrained=False)
         model_file = join(data_dir, "moco_v2_800ep_pretrain.pth.tar")
@@ -125,16 +124,16 @@ def load_model(model_type, data_dir):
             del state_dict[k]
         msg = model.load_state_dict(state_dict, strict=False)
         assert set(msg.missing_keys) == {"fc.weight", "fc.bias"}
-        model = nn.Sequential(*list(model.children())[:-1])
+        model = torch.nn.Sequential(*list(model.children())[:-1])
     elif model_type == "densenet121":
         model = models.densenet121(pretrained=True)
-        model = nn.Sequential(
-            *list(model.children())[:-1] + [nn.AdaptiveAvgPool2d((1, 1))]
+        model = torch.nn.Sequential(
+            *list(model.children())[:-1] + [torch.nn.AdaptiveAvgPool2d((1, 1))]
         )
     elif model_type == "vgg11":
         model = models.vgg11(pretrained=True)
-        model = nn.Sequential(
-            *list(model.children())[:-1] + [nn.AdaptiveAvgPool2d((1, 1))]
+        model = torch.nn.Sequential(
+            *list(model.children())[:-1] + [torch.nn.AdaptiveAvgPool2d((1, 1))]
         )
     else:
         raise ValueError("No model: {} found".format(model_type))
