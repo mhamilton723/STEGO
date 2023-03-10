@@ -62,26 +62,6 @@ def _random_crops(img, size, seed, n):
 
 
 class RandomCropComputer(Dataset):
-    def _get_size(self, img):
-        if len(img.shape) == 3:
-            return [
-                int(img.shape[1] * self.crop_ratio),
-                int(img.shape[2] * self.crop_ratio),
-            ]
-        elif len(img.shape) == 2:
-            return [
-                int(img.shape[0] * self.crop_ratio),
-                int(img.shape[1] * self.crop_ratio),
-            ]
-        else:
-            raise ValueError("Bad image shape {}".format(img.shape))
-
-    def random_crops(self, i, img):
-        return _random_crops(img, self._get_size(img), i, 5)
-
-    def five_crops(self, i, img):
-        return five_crop(img, self._get_size(img))
-
     def __init__(self, cfg, dataset_name, img_set, crop_type, crop_ratio):
         self.pytorch_data_dir = cfg.pytorch_data_dir
         self.crop_ratio = crop_ratio
@@ -122,6 +102,26 @@ class RandomCropComputer(Dataset):
             aug_photometric_transform=None,
             extra_transform=cropper,
         )
+
+    def _get_size(self, img):
+        if len(img.shape) == 3:
+            return [
+                int(img.shape[1] * self.crop_ratio),
+                int(img.shape[2] * self.crop_ratio),
+            ]
+        elif len(img.shape) == 2:
+            return [
+                int(img.shape[0] * self.crop_ratio),
+                int(img.shape[1] * self.crop_ratio),
+            ]
+        else:
+            raise ValueError("Bad image shape {}".format(img.shape))
+
+    def random_crops(self, i, img):
+        return _random_crops(img, self._get_size(img), i, 5)
+
+    def five_crops(self, i, img):
+        return five_crop(img, self._get_size(img))
 
     def __getitem__(self, item):
         batch = self.dataset[item]
