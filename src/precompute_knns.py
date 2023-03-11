@@ -1,5 +1,5 @@
 import os
-from os.path import join
+from pathlib import Path
 
 import hydra
 import numpy as np
@@ -18,7 +18,8 @@ def get_feats(model, loader):
     all_feats = []
     for pack in tqdm(loader):
         img = pack["img"]
-        feats = F.normalize(model.forward(img.cuda()).mean([2, 3]), dim=1)
+        # feats = F.normalize(model.forward(img.cuda()).mean([2, 3]), dim=1)
+        feats = F.normalize(model.forward(img).mean([2, 3]), dim=1)
         all_feats.append(feats.to("cpu", non_blocking=True))
     return torch.cat(all_feats, dim=0).contiguous()
 
@@ -26,25 +27,22 @@ def get_feats(model, loader):
 @hydra.main(config_path="configs", config_name="train_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
-    pytorch_data_dir = cfg.pytorch_data_dir
-    data_dir = join(cfg.output_root, "data")
-    log_dir = join(cfg.output_root, "logs")
-    os.makedirs(data_dir, exist_ok=True)
-    os.makedirs(log_dir, exist_ok=True)
-    os.makedirs(join(pytorch_data_dir, "nns"), exist_ok=True)
+    pytorch_data_dir = Path(cfg.pytorch_data_dir)
+    output_root = Path(cfg.output_root)
+    data_dir = output_root / "data"
+    log_dir = output_root / "logs"
+    data_dir.mkdir(exist_ok=True)
+    log_dir.mkdir(exist_ok=True)
+    (pytorch_data_dir / "nns").mkdir(exist_ok=True)
 
     seed_everything(seed=0)
 
     print(data_dir)
-    print(cfg.output_root)
+    print(output_root)
 
-    image_sets = ["val", "train"]
-    dataset_names = ["cocostuff27", "cityscapes", "potsdam"]
-    crop_types = ["five", None]
-
-    # Uncomment these lines to run on custom datasets
-    # dataset_names = ["directory"]
-    # crop_types = [None]
+    dataset_names = cfg["crop_knn"]["dataset_names"]
+    image_sets = cfg["crop_knn"]["image_sets"]
+    crop_types = cfg["crop_knn"]["crop_types"]
 
     res = 224
     n_batches = 16
@@ -52,33 +50,40 @@ def my_app(cfg: DictConfig) -> None:
     if cfg.arch == "dino":
         from modules import DinoFeaturizer, LambdaLayer
 
+        # no_ap_model = torch.nn.Sequential(
+        #     DinoFeaturizer(20, cfg), LambdaLayer(lambda p: p[0])  # dim doesent matter
+        # ).cuda()
         no_ap_model = torch.nn.Sequential(
-            DinoFeaturizer(20, cfg), LambdaLayer(lambda p: p[0])  # dim doesent matter
-        ).cuda()
+            DinoFeaturizer(20, cfg), LambdaLayer(lambda p: p[0])
+        )  # dim doesent matter
     else:
-        cut_model = load_model(cfg.model_type, join(cfg.output_root, "data")).cuda()
-        no_ap_model = torch.nn.Sequential(*list(cut_model.children())[:-1]).cuda()
+        # cut_model = load_model(cfg.model_type, output_root / "data").cuda
+        cut_model = load_model(cfg.model_type, output_root / "data")
+        # no_ap_model = torch.nn.Sequential(*list(cut_model.children())[:-1]).cuda()
+        no_ap_model = torch.nn.Sequential(*list(cut_model.children())[:-1])
     par_model = torch.nn.DataParallel(no_ap_model)
 
     for crop_type in crop_types:
         for image_set in image_sets:
             for dataset_name in dataset_names:
+                print(
+                    f"crop_type={crop_type}, img_set={image_set}, "
+                    f"dataset_name={dataset_name}"
+                )
                 nice_dataset_name = (
                     cfg.dir_dataset_name
                     if dataset_name == "directory"
                     else dataset_name
                 )
 
-                feature_cache_file = join(
-                    pytorch_data_dir,
-                    "nns",
-                    "nns_{}_{}_{}_{}_{}.npz".format(
-                        cfg.model_type, nice_dataset_name, image_set, crop_type, res
-                    ),
+                feature_cache_file = (
+                    pytorch_data_dir
+                    / "nns"
+                    / f"nns_{cfg.model_type}_{nice_dataset_name}_{image_set}_{crop_type}_{res}.npz"
                 )
 
-                if not os.path.exists(feature_cache_file):
-                    print("{} not found, computing".format(feature_cache_file))
+                if not feature_cache_file.exists():
+                    print(f"{feature_cache_file} not found, computing")
                     dataset = ContrastiveSegDataset(
                         pytorch_data_dir=pytorch_data_dir,
                         dataset_name=dataset_name,
@@ -103,7 +108,7 @@ def my_app(cfg: DictConfig) -> None:
                         step = normed_feats.shape[0] // n_batches
                         print(normed_feats.shape)
                         for i in tqdm(range(0, normed_feats.shape[0], step)):
-                            torch.cuda.empty_cache()
+                            # torch.cuda.empty_cache()
                             batch_feats = normed_feats[i : i + step, :]
                             pairwise_sims = torch.einsum(
                                 "nf,mf->nm", batch_feats, normed_feats
