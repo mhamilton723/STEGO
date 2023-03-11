@@ -1,18 +1,24 @@
 # See https://github.com/mhamilton723/STEGO/issues/16#issuecomment-1168772107
+import os
 from collections import defaultdict
 from multiprocessing import Pool, get_context
+from os.path import join
 
 import hydra
+import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
 import torch.multiprocessing
+import torch.nn.functional as F
 from omegaconf import DictConfig, OmegaConf
+from PIL import Image
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from crf import dense_crf
-from data import *
-from modules import *
+from data import ContrastiveSegDataset
 from train_segmentation import LitUnsupervisedSegmenter, get_class_labels, prep_for_plot
+from utils import flexible_collate, get_transform, prep_args, remove_axes
 
 # Hack to try and get multiprocessing to work, but makes compute only happen
 #   on one processor!
