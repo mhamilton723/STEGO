@@ -1,9 +1,11 @@
-output_root: '../'
-pytorch_data_dir: '/Users/mclapp/ml/pytorch_data/'
+# base_config has common preferences for all configs
+defaults:
+  - base_config
+  - _self_
+
 experiment_name: "cocostuff"
 res: 320
 batch_size: 8
-num_workers: 10
 run_picie: False
 run_crf: True
 run_prediction: True
@@ -14,10 +16,3 @@ model_paths:
   - "../saved_models/cocostuff27_vit_base_5.ckpt"
   #- "../saved_models/cityscapes_vit_base_1.ckpt"
   #- "../saved_models/potsdam_test.ckpt"
-
-hydra:
-  run:
-    dir: "."
-  output_subdir: ~
-  #job_logging: "disabled"
-  #hydra_logging: "disabled"

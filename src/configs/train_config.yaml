@@ -1,3 +1,8 @@
+# base_config has common preferences for all configs
+defaults:
+  - base_config
+  - _self_
+
 # only used in crop_datasets.py
 crop_datasets:
   dataset_names:
@@ -9,15 +14,13 @@ crop_datasets:
     - "five"
   crop_ratios:
     - 0.5
-output_root: '../'
-pytorch_data_dir: '/Users/mclapp/ml/pytorch_data/'
+
 experiment_name: "exp1"
 log_dir: "cocostuff27"
 azureml_logging: True
 submitting_to_aml: False
 
 # Loader params
-num_workers: 10
 max_steps: 5000
 batch_size: 16
 
@@ -177,13 +180,3 @@ scalar_log_freq: 10
 checkpoint_freq: 50
 val_freq: 100
 hist_freq: 100
-
-
-hydra:
-  run:
-    dir: "."
-  output_subdir: ~
-  job:
-    chdir: True # to disable warnings
-  #job_logging: "disabled"
-  #hydra_logging: "disabled"

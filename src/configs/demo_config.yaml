@@ -1,15 +1,11 @@
-output_root: '../'
+# base_config has common preferences for all configs
+defaults:
+  - base_config
+  - _self_
+
 model_path: "../saved_models/cocostuff27_vit_base_5.ckpt"
 image_dir: "/datadrive/pytorch-data/cocostuff/images/val2017"
 experiment_name: "cocostuff_val"
 res: 320
 batch_size: 8
-num_workers: 24
 use_ddp: False
-
-hydra:
-  run:
-    dir: "."
-  output_subdir: ~
-  #job_logging: "disabled"
-  #hydra_logging: "disabled"
