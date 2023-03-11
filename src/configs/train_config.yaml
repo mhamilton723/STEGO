@@ -3,17 +3,48 @@ defaults:
   - base_config
   - _self_
 
-# only used in crop_datasets.py
-crop_datasets:
+# only used in crop_datasets.py and precompute_knns.py
+crop_knn:
   dataset_names:
     - cityscapes
-  img_sets:
+  image_sets:
     - train
     - val
   crop_types:
-    - "five"
+    - five
   crop_ratios:
     - 0.5
+
+# crop_knn:
+#   dataset_names:
+#     - cityscapes
+#     - cocostuff27
+#   image_sets:
+#     - train
+#     - val
+#   crop_types:
+#     - five
+#     - random
+#   crop_ratios:
+#     - 0.5
+#     - 0.7
+# crop_knn:
+#   dataset_names:
+#     - cocostuff27
+#     - cityscapes
+#     - potsdam
+#   image_sets:
+#     - val
+#     - train
+#   crop_types:
+#     - five
+#     - null
+# # To run on custom datasets
+# crop_knn:
+#   dataset_names:
+#     - directory
+#   crop_types:
+#     - null
 
 experiment_name: "exp1"
 log_dir: "cocostuff27"

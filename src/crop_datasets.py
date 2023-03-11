@@ -1,5 +1,5 @@
 import os
-from os.path import join
+from pathlib import Path
 
 import hydra
 import torch
@@ -45,8 +45,10 @@ def _random_crops(img, size, seed, n):
     image_width, image_height = _get_image_size(img)
     crop_height, crop_width = size
     if crop_width > image_width or crop_height > image_height:
-        msg = "Requested crop size {} is bigger than input size {}"
-        raise ValueError(msg.format(size, (image_height, image_width)))
+        raise ValueError(
+            f"Requested crop size {size} is bigger than "
+            f"input size {(image_height, image_width)}"
+        )
 
     images = []
     for i in range(n):
@@ -62,35 +64,35 @@ def _random_crops(img, size, seed, n):
 
 
 class RandomCropComputer(Dataset):
-    def __init__(self, cfg, dataset_name, img_set, crop_type, crop_ratio):
-        self.pytorch_data_dir = cfg.pytorch_data_dir
+    def __init__(self, cfg, dataset_name, image_set, crop_type, crop_ratio):
+        self.pytorch_data_dir = Path(cfg.pytorch_data_dir)
         self.crop_ratio = crop_ratio
-        self.save_dir = join(
-            cfg.pytorch_data_dir,
-            "cropped",
-            "{}_{}_crop_{}".format(dataset_name, crop_type, crop_ratio),
+        self.save_dir = (
+            self.pytorch_data_dir
+            / "cropped"
+            / f"{dataset_name}_{crop_type}_crop_{crop_ratio}"
         )
-        self.img_set = img_set
+        self.image_set = image_set
         self.dataset_name = dataset_name
         self.cfg = cfg
 
-        self.img_dir = join(self.save_dir, "img", img_set)
-        self.label_dir = join(self.save_dir, "label", img_set)
-        os.makedirs(self.img_dir, exist_ok=True)
-        os.makedirs(self.label_dir, exist_ok=True)
+        self.img_dir = self.save_dir / "img" / image_set
+        self.label_dir = self.save_dir / "label" / image_set
+        self.img_dir.mkdir(exist_ok=True)
+        self.label_dir.mkdir(exist_ok=True)
 
         if crop_type == "random":
             cropper = lambda i, x: self.random_crops(i, x)
         elif crop_type == "five":
             cropper = lambda i, x: self.five_crops(i, x)
         else:
-            raise ValueError("Unknown crop type {}".format(crop_type))
+            raise ValueError(f"Unknown crop type {crop_type}")
 
         self.dataset = ContrastiveSegDataset(
             cfg.pytorch_data_dir,
             dataset_name,
             None,
-            img_set,
+            image_set,
             T.ToTensor(),
             ToTargetTensor(),
             cfg=cfg,
@@ -115,7 +117,7 @@ class RandomCropComputer(Dataset):
                 int(img.shape[1] * self.crop_ratio),
             ]
         else:
-            raise ValueError("Bad image shape {}".format(img.shape))
+            raise ValueError(f"Bad image shape {img.shape}")
 
     def random_crops(self, i, img):
         return _random_crops(img, self._get_size(img), i, 5)
@@ -145,12 +147,8 @@ class RandomCropComputer(Dataset):
                 .numpy()
                 .squeeze(-1)
             )
-            Image.fromarray(img_arr).save(
-                join(self.img_dir, "{}.jpg".format(img_num)), "JPEG"
-            )
-            Image.fromarray(label_arr).save(
-                join(self.label_dir, "{}.png".format(img_num)), "PNG"
-            )
+            Image.fromarray(img_arr).save(self.img_dir / f"{img_num}.jpg", "JPEG")
+            Image.fromarray(label_arr).save(self.label_dir / f"{img_num}.png", "PNG")
         return True
 
     def __len__(self):
@@ -162,27 +160,21 @@ def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
     seed_everything(seed=0, workers=True)
 
-    # dataset_names = ["cityscapes", "cocostuff27"]
-    # img_sets = ["train", "val"]
-    # crop_types = ["five","random"]
-    # crop_ratios = [.5, .7]
-
-    # dataset_names = ["cityscapes"]
-    # img_sets = ["train", "val"]
-    # crop_types = ["five"]
-    # crop_ratios = [0.5]
-
-    dataset_names = cfg["crop_datasets"]["dataset_names"]
-    img_sets = cfg["crop_datasets"]["img_sets"]
-    crop_types = cfg["crop_datasets"]["crop_types"]
-    crop_ratios = cfg["crop_datasets"]["crop_ratios"]
+    dataset_names = cfg["crop_knn"]["dataset_names"]
+    image_sets = cfg["crop_knn"]["image_sets"]
+    crop_types = cfg["crop_knn"]["crop_types"]
+    crop_ratios = cfg["crop_knn"]["crop_ratios"]
 
     for crop_ratio in crop_ratios:
         for crop_type in crop_types:
             for dataset_name in dataset_names:
-                for img_set in img_sets:
+                for image_set in image_sets:
+                    print(
+                        f"crop_ratio={crop_ratio}, crop_type={crop_type}, "
+                        f"dataset_name={dataset_name}, image_set={image_set}"
+                    )
                     dataset = RandomCropComputer(
-                        cfg, dataset_name, img_set, crop_type, crop_ratio
+                        cfg, dataset_name, image_set, crop_type, crop_ratio
                     )
                     loader = DataLoader(
                         dataset,
