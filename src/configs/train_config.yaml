@@ -1,3 +1,14 @@
+# only used in crop_datasets.py
+crop_datasets:
+  dataset_names:
+    - cityscapes
+  img_sets:
+    - train
+    - val
+  crop_types:
+    - "five"
+  crop_ratios:
+    - 0.5
 output_root: '../'
 pytorch_data_dir: '/Users/mclapp/ml/pytorch_data/'
 experiment_name: "exp1"

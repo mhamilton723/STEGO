@@ -167,10 +167,15 @@ def my_app(cfg: DictConfig) -> None:
     # crop_types = ["five","random"]
     # crop_ratios = [.5, .7]
 
-    dataset_names = ["cityscapes"]
-    img_sets = ["train", "val"]
-    crop_types = ["five"]
-    crop_ratios = [0.5]
+    # dataset_names = ["cityscapes"]
+    # img_sets = ["train", "val"]
+    # crop_types = ["five"]
+    # crop_ratios = [0.5]
+
+    dataset_names = cfg["crop_datasets"]["dataset_names"]
+    img_sets = cfg["crop_datasets"]["img_sets"]
+    crop_types = cfg["crop_datasets"]["crop_types"]
+    crop_ratios = cfg["crop_datasets"]["crop_ratios"]
 
     for crop_ratio in crop_ratios:
         for crop_type in crop_types:
