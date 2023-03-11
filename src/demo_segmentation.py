@@ -31,7 +31,7 @@ class UnlabeledImageFolder(Dataset):
         return len(self.images)
 
 
-@hydra.main(config_path="configs", config_name="demo_config.yaml", version_base="1.1")
+@hydra.main(config_path="configs", config_name="demo_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     result_dir = "../results/predictions/{}".format(cfg.experiment_name)
     os.makedirs(result_dir, exist_ok=True)

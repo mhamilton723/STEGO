@@ -157,7 +157,7 @@ class RandomCropComputer(Dataset):
         return len(self.dataset)
 
 
-@hydra.main(config_path="configs", config_name="train_config.yaml", version_base="1.1")
+@hydra.main(config_path="configs", config_name="train_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
     seed_everything(seed=0, workers=True)

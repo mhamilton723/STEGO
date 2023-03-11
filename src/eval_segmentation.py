@@ -63,7 +63,7 @@ def batched_crf(pool, img_tensor, prob_tensor):
     return torch.cat([torch.from_numpy(arr).unsqueeze(0) for arr in outputs], dim=0)
 
 
-@hydra.main(config_path="configs", config_name="eval_config.yaml", version_base="1.1")
+@hydra.main(config_path="configs", config_name="eval_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     pytorch_data_dir = cfg.pytorch_data_dir
     result_dir = "../results/predictions/{}".format(cfg.experiment_name)

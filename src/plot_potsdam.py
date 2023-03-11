@@ -8,7 +8,7 @@ from modules import *
 from train_segmentation import LitUnsupervisedSegmenter
 
 
-@hydra.main(config_path="configs", config_name="train_config.yaml", version_base="1.1")
+@hydra.main(config_path="configs", config_name="train_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     # print(OmegaConf.to_yaml(cfg))
     pytorch_data_dir = cfg.pytorch_data_dir

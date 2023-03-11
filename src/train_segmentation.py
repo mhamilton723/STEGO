@@ -383,7 +383,7 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
         return net_optim, linear_probe_optim, cluster_probe_optim
 
 
-@hydra.main(config_path="configs", config_name="train_config.yaml", version_base="1.1")
+@hydra.main(config_path="configs", config_name="train_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     OmegaConf.set_struct(cfg, False)
     print(OmegaConf.to_yaml(cfg))
