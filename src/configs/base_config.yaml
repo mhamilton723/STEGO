@@ -5,6 +5,6 @@ output_root: '../'
 hydra:
   run:
     dir: "."
-  output_subdir: ~
+  output_subdir: null
   job:
     chdir: True # to disable warnings
