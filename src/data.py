@@ -760,7 +760,8 @@ class ContrastiveSegDataset(Dataset):
             [
                 torch.linspace(-1, 1, pack[0].shape[1]),
                 torch.linspace(-1, 1, pack[0].shape[2]),
-            ]
+            ],
+            indexing="ij",
         )
         coord = torch.cat([t.unsqueeze(0) for t in coord_entries], 0)
 
