@@ -6,7 +6,7 @@ azureml_logging: True
 submitting_to_aml: False
 
 # Loader params
-num_workers: 24
+num_workers: 10
 max_steps: 5000
 batch_size: 16
 
@@ -172,5 +172,7 @@ hydra:
   run:
     dir: "."
   output_subdir: ~
+  job:
+    chdir: True # to disable warnings
   #job_logging: "disabled"
   #hydra_logging: "disabled"
