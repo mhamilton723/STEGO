@@ -1,6 +1,7 @@
 import os
 import random
 from os.path import join
+from typing import Any, Dict, Tuple
 
 import numpy as np
 import torch.multiprocessing
@@ -464,6 +465,75 @@ class MaterializedDataset(Dataset):
         return self.materialized[ind]
 
 
+def select_dataset(
+    dataset_name: str,
+    cfg,
+    image_set,
+    transform,
+    target_transform,
+    crop_type,
+    pytorch_data_dir,
+) -> Tuple[int, Any]:
+    dataset_class: Any
+    extra_args: Dict[str, Any]
+    if dataset_name == "potsdam":
+        n_classes = 3
+        dataset_class = Potsdam
+        extra_args = dict(coarse_labels=True)
+    elif dataset_name == "potsdamraw":
+        n_classes = 3
+        dataset_class = PotsdamRaw
+        extra_args = dict(coarse_labels=True)
+    elif dataset_name == "directory":
+        n_classes = cfg.dir_dataset_n_classes
+        dataset_class = DirectoryDataset
+        extra_args = dict(path=cfg.dir_dataset_name)
+    elif dataset_name == "cityscapes" and crop_type is None:
+        n_classes = 27
+        dataset_class = CityscapesSeg
+        extra_args = dict()
+    elif dataset_name == "cityscapes" and crop_type is not None:
+        n_classes = 27
+        dataset_class = CroppedDataset
+        extra_args = dict(
+            dataset_name="cityscapes", crop_type=crop_type, crop_ratio=cfg.crop_ratio
+        )
+    elif dataset_name == "cocostuff3":
+        n_classes = 3
+        dataset_class = Coco
+        extra_args = dict(coarse_labels=True, subset=6, exclude_things=True)
+    elif dataset_name == "cocostuff15":
+        n_classes = 15
+        dataset_class = Coco
+        extra_args = dict(coarse_labels=False, subset=7, exclude_things=True)
+    elif dataset_name == "cocostuff27" and crop_type is not None:
+        n_classes = 27
+        dataset_class = CroppedDataset
+        extra_args = dict(
+            dataset_name="cocostuff27",
+            crop_type=cfg.crop_type,
+            crop_ratio=cfg.crop_ratio,
+        )
+    elif dataset_name == "cocostuff27" and crop_type is None:
+        n_classes = 27
+        dataset_class = Coco
+        extra_args = dict(coarse_labels=False, subset=None, exclude_things=False)
+        if image_set == "val":
+            extra_args["subset"] = 7
+    else:
+        raise ValueError("Unknown dataset: {}".format(dataset_name))
+
+    dataset = dataset_class(
+        root=pytorch_data_dir,
+        image_set=image_set,
+        transform=transform,
+        target_transform=target_transform,
+        **extra_args
+    )
+
+    return n_classes, dataset
+
+
 class ContrastiveSegDataset(Dataset):
     def __init__(
         self,
@@ -484,7 +554,7 @@ class ContrastiveSegDataset(Dataset):
         extra_transform=None,
         model_type_override=None,
     ):
-        super(ContrastiveSegDataset).__init__()
+        super().__init__()
         self.num_neighbors = num_neighbors
         self.image_set = image_set
         self.dataset_name = dataset_name
@@ -493,65 +563,18 @@ class ContrastiveSegDataset(Dataset):
         self.pos_images = pos_images
         self.extra_transform = extra_transform
 
-        if dataset_name == "potsdam":
-            self.n_classes = 3
-            dataset_class = Potsdam
-            extra_args = dict(coarse_labels=True)
-        elif dataset_name == "potsdamraw":
-            self.n_classes = 3
-            dataset_class = PotsdamRaw
-            extra_args = dict(coarse_labels=True)
-        elif dataset_name == "directory":
-            self.n_classes = cfg.dir_dataset_n_classes
-            dataset_class = DirectoryDataset
-            extra_args = dict(path=cfg.dir_dataset_name)
-        elif dataset_name == "cityscapes" and crop_type is None:
-            self.n_classes = 27
-            dataset_class = CityscapesSeg
-            extra_args = dict()
-        elif dataset_name == "cityscapes" and crop_type is not None:
-            self.n_classes = 27
-            dataset_class = CroppedDataset
-            extra_args = dict(
-                dataset_name="cityscapes",
-                crop_type=crop_type,
-                crop_ratio=cfg.crop_ratio,
-            )
-        elif dataset_name == "cocostuff3":
-            self.n_classes = 3
-            dataset_class = Coco
-            extra_args = dict(coarse_labels=True, subset=6, exclude_things=True)
-        elif dataset_name == "cocostuff15":
-            self.n_classes = 15
-            dataset_class = Coco
-            extra_args = dict(coarse_labels=False, subset=7, exclude_things=True)
-        elif dataset_name == "cocostuff27" and crop_type is not None:
-            self.n_classes = 27
-            dataset_class = CroppedDataset
-            extra_args = dict(
-                dataset_name="cocostuff27",
-                crop_type=cfg.crop_type,
-                crop_ratio=cfg.crop_ratio,
-            )
-        elif dataset_name == "cocostuff27" and crop_type is None:
-            self.n_classes = 27
-            dataset_class = Coco
-            extra_args = dict(coarse_labels=False, subset=None, exclude_things=False)
-            if image_set == "val":
-                extra_args["subset"] = 7
-        else:
-            raise ValueError("Unknown dataset: {}".format(dataset_name))
+        (self.n_classes, self.dataset) = select_dataset(
+            dataset_name,
+            cfg,
+            image_set,
+            transform,
+            target_transform,
+            crop_type,
+            pytorch_data_dir,
+        )
 
         self.aug_geometric_transform = aug_geometric_transform
         self.aug_photometric_transform = aug_photometric_transform
-
-        self.dataset = dataset_class(
-            root=pytorch_data_dir,
-            image_set=self.image_set,
-            transform=transform,
-            target_transform=target_transform,
-            **extra_args
-        )
 
         if model_type_override is not None:
             model_type = model_type_override
