@@ -59,7 +59,7 @@ num_neighbors: 7
 dataset_name: "cocostuff27"
 
 # Used if dataset_name is "directory"
-dir_dataset_name: ~
+dir_dataset_name: null
 dir_dataset_n_classes: 5
 
 has_labels: False
