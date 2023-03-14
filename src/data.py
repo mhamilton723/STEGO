@@ -41,42 +41,23 @@ def create_pascal_label_colormap():
 
 
 def create_cityscapes_colormap():
+    # fmt: off
     colors = [
-        (128, 64, 128),
-        (244, 35, 232),
-        (250, 170, 160),
-        (230, 150, 140),
-        (70, 70, 70),
-        (102, 102, 156),
-        (190, 153, 153),
-        (180, 165, 180),
-        (150, 100, 100),
-        (150, 120, 90),
-        (153, 153, 153),
-        (153, 153, 153),
-        (250, 170, 30),
-        (220, 220, 0),
-        (107, 142, 35),
-        (152, 251, 152),
-        (70, 130, 180),
-        (220, 20, 60),
-        (255, 0, 0),
-        (0, 0, 142),
-        (0, 0, 70),
-        (0, 60, 100),
-        (0, 0, 90),
-        (0, 0, 110),
-        (0, 80, 100),
-        (0, 0, 230),
-        (119, 11, 32),
-        (0, 0, 0),
+        (128, 64, 128), (244, 35, 232), (250, 170, 160), (230, 150, 140),
+        (70, 70, 70), (102, 102, 156), (190, 153, 153), (180, 165, 180),
+        (150, 100, 100), (150, 120, 90), (153, 153, 153), (153, 153, 153),
+        (250, 170, 30), (220, 220, 0), (107, 142, 35), (152, 251, 152),
+        (70, 130, 180), (220, 20, 60), (255, 0, 0), (0, 0, 142),
+        (0, 0, 70), (0, 60, 100), (0, 0, 90), (0, 0, 110),
+        (0, 80, 100), (0, 0, 230), (119, 11, 32), (0, 0, 0),
     ]
+    # fmt: on
     return np.array(colors)
 
 
 class DirectoryDataset(Dataset):
     def __init__(self, root, path, image_set, transform, target_transform):
-        super(DirectoryDataset, self).__init__()
+        super().__init__()
         self.split = image_set
         self.dir = join(root, path)
         self.img_dir = join(self.dir, "imgs", self.split)
@@ -122,7 +103,7 @@ class DirectoryDataset(Dataset):
 
 class Potsdam(Dataset):
     def __init__(self, root, image_set, transform, target_transform, coarse_labels):
-        super(Potsdam, self).__init__()
+        super().__init__()
         self.split = image_set
         self.root = os.path.join(root, "potsdam")
         self.transform = transform
@@ -188,7 +169,7 @@ class Potsdam(Dataset):
 
 class PotsdamRaw(Dataset):
     def __init__(self, root, image_set, transform, target_transform, coarse_labels):
-        super(PotsdamRaw, self).__init__()
+        super().__init__()
         self.split = image_set
         self.root = os.path.join(root, "potsdamraw", "processed")
         self.transform = transform
@@ -254,7 +235,7 @@ class Coco(Dataset):
         exclude_things,
         subset=None,
     ):
-        super(Coco, self).__init__()
+        super().__init__()
         self.split = image_set
         self.root = join(root, "cocostuff")
         self.coarse_labels = coarse_labels
@@ -360,7 +341,7 @@ class Coco(Dataset):
 
 class CityscapesSeg(Dataset):
     def __init__(self, root, image_set, transform, target_transform):
-        super(CityscapesSeg, self).__init__()
+        super().__init__()
         self.split = image_set
         self.root = join(root, "cityscapes")
         if image_set == "train":
@@ -417,7 +398,7 @@ class CroppedDataset(Dataset):
         transform,
         target_transform,
     ):
-        super(CroppedDataset, self).__init__()
+        super().__init__()
         self.dataset_name = dataset_name
         self.split = image_set
         self.root = join(
