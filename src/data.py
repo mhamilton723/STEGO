@@ -1,6 +1,5 @@
-import os
 import random
-from os.path import join
+from pathlib import Path
 from typing import Any, Dict, Tuple
 
 import numpy as np
@@ -59,28 +58,28 @@ class DirectoryDataset(Dataset):
     def __init__(self, root, path, image_set, transform, target_transform):
         super().__init__()
         self.split = image_set
-        self.dir = join(root, path)
-        self.img_dir = join(self.dir, "imgs", self.split)
-        self.label_dir = join(self.dir, "labels", self.split)
+        self.dir = Path(root) / path
+        self.img_dir = self.dir / "imgs" / self.split
+        self.label_dir = self.dir / "labels" / self.split
 
         self.transform = transform
         self.target_transform = target_transform
 
-        self.img_files = np.array(sorted(os.listdir(self.img_dir)))
+        self.img_files = np.array(sorted(self.img_dir.iterdir()))
         assert len(self.img_files) > 0
-        if os.path.exists(join(self.dir, "labels")):
-            self.label_files = np.array(sorted(os.listdir(self.label_dir)))
+        if (self.dir / "labels").exists():
+            self.label_files = np.array(sorted(self.label_dir.iterdir()))
             assert len(self.img_files) == len(self.label_files)
         else:
             self.label_files = None
 
     def __getitem__(self, index):
         image_fn = self.img_files[index]
-        img = Image.open(join(self.img_dir, image_fn))
+        img = Image.open(self.img_dir / image_fn)
 
         if self.label_files is not None:
             label_fn = self.label_files[index]
-            label = Image.open(join(self.label_dir, label_fn))
+            label = Image.open(self.label_dir / label_fn)
 
         seed = np.random.randint(2147483647)
         random.seed(seed)
@@ -105,7 +104,7 @@ class Potsdam(Dataset):
     def __init__(self, root, image_set, transform, target_transform, coarse_labels):
         super().__init__()
         self.split = image_set
-        self.root = os.path.join(root, "potsdam")
+        self.root = Path(root) / "potsdam"
         self.transform = transform
         self.target_transform = target_transform
         split_files = {
@@ -120,7 +119,7 @@ class Potsdam(Dataset):
 
         self.files = []
         for split_file in split_files[self.split]:
-            with open(join(self.root, split_file), "r") as f:
+            with (self.root / split_file).open("r") as f:
                 self.files.extend(fn.rstrip() for fn in f.readlines())
 
         self.coarse_labels = coarse_labels
@@ -136,12 +135,12 @@ class Potsdam(Dataset):
 
     def __getitem__(self, index):
         image_id = self.files[index]
-        img = loadmat(join(self.root, "imgs", image_id + ".mat"))["img"]
+        img = loadmat(self.root / "imgs" / image_id + ".mat")["img"]
         img = to_pil_image(
             torch.from_numpy(img).permute(2, 0, 1)[:3]
         )  # TODO add ir channel back
         try:
-            label = loadmat(join(self.root, "gt", image_id + ".mat"))["gt"]
+            label = loadmat(self.root / "gt" / image_id + ".mat")["gt"]
             label = to_pil_image(torch.from_numpy(label).unsqueeze(-1).permute(2, 0, 1))
         except FileNotFoundError:
             label = to_pil_image(torch.ones(1, img.height, img.width))
@@ -171,14 +170,14 @@ class PotsdamRaw(Dataset):
     def __init__(self, root, image_set, transform, target_transform, coarse_labels):
         super().__init__()
         self.split = image_set
-        self.root = os.path.join(root, "potsdamraw", "processed")
+        self.root = Path(root) / "potsdamraw" / "processed"
         self.transform = transform
         self.target_transform = target_transform
         self.files = []
         for im_num in range(38):
             for i_h in range(15):
                 for i_w in range(15):
-                    self.files.append("{}_{}_{}.mat".format(im_num, i_h, i_w))
+                    self.files.append(f"{im_num}_{i_h}_{i_w}.mat")
 
         self.coarse_labels = coarse_labels
         self.fine_to_coarse = {
@@ -193,12 +192,12 @@ class PotsdamRaw(Dataset):
 
     def __getitem__(self, index):
         image_id = self.files[index]
-        img = loadmat(join(self.root, "imgs", image_id))["img"]
+        img = loadmat(self.root / "imgs" / image_id)["img"]
         img = to_pil_image(
             torch.from_numpy(img).permute(2, 0, 1)[:3]
         )  # TODO add ir channel back
         try:
-            label = loadmat(join(self.root, "gt", image_id))["gt"]
+            label = loadmat(self.root / "gt" / image_id)["gt"]
             label = to_pil_image(torch.from_numpy(label).unsqueeze(-1).permute(2, 0, 1))
         except FileNotFoundError:
             label = to_pil_image(torch.ones(1, img.height, img.width))
@@ -237,7 +236,7 @@ class Coco(Dataset):
     ):
         super().__init__()
         self.split = image_set
-        self.root = join(root, "cocostuff")
+        self.root = Path(root) / "cocostuff"
         self.coarse_labels = coarse_labels
         self.transform = transform
         self.label_transform = target_transform
@@ -261,14 +260,14 @@ class Coco(Dataset):
         self.image_files = []
         self.label_files = []
         for split_dir in split_dirs[self.split]:
-            with open(join(self.root, "curated", split_dir, self.image_list), "r") as f:
+            with (self.root / "curated" / split_dir / self.image_list).open("r") as f:
                 img_ids = [fn.rstrip() for fn in f.readlines()]
                 for img_id in img_ids:
                     self.image_files.append(
-                        join(self.root, "images", split_dir, img_id + ".jpg")
+                        self.root / "images" / split_dir / img_id + ".jpg"
                     )
                     self.label_files.append(
-                        join(self.root, "annotations", split_dir, img_id + ".png")
+                        self.root / "annotations" / split_dir / img_id + ".png"
                     )
 
         # fmt: off
@@ -343,7 +342,7 @@ class CityscapesSeg(Dataset):
     def __init__(self, root, image_set, transform, target_transform):
         super().__init__()
         self.split = image_set
-        self.root = join(root, "cityscapes")
+        self.root = Path(root) / "cityscapes"
         if image_set == "train":
             # our_image_set = "train_extra"
             # mode = "coarse"
@@ -401,19 +400,19 @@ class CroppedDataset(Dataset):
         super().__init__()
         self.dataset_name = dataset_name
         self.split = image_set
-        self.root = join(
-            root, "cropped", "{}_{}_crop_{}".format(dataset_name, crop_type, crop_ratio)
+        self.root = (
+            Path(root) / "cropped" / f"{dataset_name}_{crop_type}_crop_{crop_ratio}"
         )
         self.transform = transform
         self.target_transform = target_transform
-        self.img_dir = join(self.root, "img", self.split)
-        self.label_dir = join(self.root, "label", self.split)
-        self.num_images = len(os.listdir(self.img_dir))
-        assert self.num_images == len(os.listdir(self.label_dir))
+        self.img_dir = self.root / "img" / self.split
+        self.label_dir = self.root / "label" / self.split
+        self.num_images = len(list(self.img_dir.iterdir()))
+        assert self.num_images == len(list(self.label_dir.iterdir()))
 
     def __getitem__(self, index):
-        image = Image.open(join(self.img_dir, "{}.jpg".format(index))).convert("RGB")
-        target = Image.open(join(self.label_dir, "{}.png".format(index)))
+        image = Image.open(self.img_dir / f"{index}.jpg").convert("RGB")
+        target = Image.open(self.label_dir / f"{index}.png")
 
         seed = np.random.randint(2147483647)
         random.seed(seed)
@@ -502,7 +501,7 @@ def select_dataset(
         if image_set == "val":
             extra_args["subset"] = 7
     else:
-        raise ValueError("Unknown dataset: {}".format(dataset_name))
+        raise ValueError(f"Unknown dataset: {dataset_name}")
 
     dataset = dataset_class(
         root=pytorch_data_dir,
@@ -565,19 +564,15 @@ class ContrastiveSegDataset(Dataset):
         nice_dataset_name = (
             cfg.dir_dataset_name if dataset_name == "directory" else dataset_name
         )
-        feature_cache_file = join(
-            pytorch_data_dir,
-            "nns",
-            "nns_{}_{}_{}_{}_{}.npz".format(
-                model_type, nice_dataset_name, image_set, crop_type, cfg.res
-            ),
+        feature_cache_file = (
+            Path(pytorch_data_dir)
+            / "nns"
+            / f"nns_{model_type}_{nice_dataset_name}_{image_set}_{crop_type}_{cfg.res}.npz"
         )
         if pos_labels or pos_images:
-            if not os.path.exists(feature_cache_file) or compute_knns:
+            if not feature_cache_file.exists() or compute_knns:
                 raise ValueError(
-                    "could not find nn file {} please run precompute_knns".format(
-                        feature_cache_file
-                    )
+                    f"could not find nn file {feature_cache_file} please run precompute_knns"
                 )
             else:
                 loaded = np.load(feature_cache_file)
