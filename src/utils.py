@@ -1,7 +1,6 @@
 import collections
 import io
-import os
-from os.path import join
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -68,11 +67,11 @@ def one_hot_feats(labels, n_classes):
     return F.one_hot(labels, n_classes).permute(0, 3, 1, 2).to(torch.float32)
 
 
-def load_model(model_type, data_dir):
+def load_model(model_type, data_dir: Path):
     if model_type == "robust_resnet50":
         model = models.resnet50(pretrained=False)
-        model_file = join(data_dir, "imagenet_l2_3_0.pt")
-        if not os.path.exists(model_file):
+        model_file = data_dir / "imagenet_l2_3_0.pt"
+        if not model_file.exists():
             wget.download(
                 "http://6.869.csail.mit.edu/fa19/psets19/pset6/imagenet_l2_3_0.pt",
                 model_file,
@@ -87,8 +86,8 @@ def load_model(model_type, data_dir):
         model = torch.nn.Sequential(*list(model.children())[:-1])
     elif model_type == "densecl":
         model = models.resnet50(pretrained=False)
-        model_file = join(data_dir, "densecl_r50_coco_1600ep.pth")
-        if not os.path.exists(model_file):
+        model_file = data_dir / "densecl_r50_coco_1600ep.pth"
+        if not model_file.exists():
             wget.download(
                 "https://cloudstor.aarnet.edu.au/plus/s/3GapXiWuVAzdKwJ/download",
                 model_file,
@@ -103,8 +102,8 @@ def load_model(model_type, data_dir):
         model = torch.nn.Sequential(*list(model.children())[:-1])
     elif model_type == "mocov2":
         model = models.resnet50(pretrained=False)
-        model_file = join(data_dir, "moco_v2_800ep_pretrain.pth.tar")
-        if not os.path.exists(model_file):
+        model_file = data_dir / "moco_v2_800ep_pretrain.pth.tar"
+        if not model_file.exists():
             wget.download(
                 "https://dl.fbaipublicfiles.com/moco/moco_checkpoints/"
                 "moco_v2_800ep/moco_v2_800ep_pretrain.pth.tar",
