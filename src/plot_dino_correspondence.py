@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 import hydra
 import matplotlib.animation as animation
@@ -74,6 +75,7 @@ def get_heatmaps(net, img, img_pos, query_points):
 
 @hydra.main(config_path="configs", config_name="plot_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
+    net: Any
     print(OmegaConf.to_yaml(cfg))
     pytorch_data_dir = Path(cfg.pytorch_data_dir)
     data_dir = Path(cfg.output_root) / "data"
