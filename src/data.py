@@ -509,7 +509,7 @@ def select_dataset(
         image_set=image_set,
         transform=transform,
         target_transform=target_transform,
-        **extra_args
+        **extra_args,
     )
 
     return n_classes, dataset
@@ -588,7 +588,7 @@ class ContrastiveSegDataset(Dataset):
         return len(self.dataset)
 
     def _set_seed(self, seed):
-        random.seed(seed)  # apply this seed to img tranfsorms
+        random.seed(seed)  # apply this seed to img transforms
         torch.manual_seed(seed)  # needed for torchvision 0.7
 
     def __getitem__(self, ind):
