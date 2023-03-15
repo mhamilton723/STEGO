@@ -8,7 +8,7 @@ from PIL import Image
 from pytorch_lightning.utilities.seed import seed_everything
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms as T
-from torchvision.transforms.functional import _get_image_size, crop, five_crop
+from torchvision.transforms.functional import crop, five_crop, get_image_size
 from tqdm import tqdm
 
 from data import ContrastiveSegDataset
@@ -42,7 +42,7 @@ def _random_crops(img, size, seed, n):
     if len(size) != 2:
         raise ValueError("Please provide only two dimensions (h, w) for size.")
 
-    image_width, image_height = _get_image_size(img)
+    image_width, image_height = get_image_size(img)
     crop_height, crop_width = size
     if crop_width > image_width or crop_height > image_height:
         raise ValueError(
@@ -82,9 +82,9 @@ class RandomCropComputer(Dataset):
         self.label_dir.mkdir(exist_ok=True)
 
         if crop_type == "random":
-            cropper = lambda i, x: self.random_crops(i, x)
+            cropper = self.random_cropper
         elif crop_type == "five":
-            cropper = lambda i, x: self.five_crops(i, x)
+            cropper = self.five_cropper
         else:
             raise ValueError(f"Unknown crop type {crop_type}")
 
@@ -104,6 +104,12 @@ class RandomCropComputer(Dataset):
             aug_photometric_transform=None,
             extra_transform=cropper,
         )
+
+    def random_cropper(self, i, x):
+        return self.random_crops(i, x)
+
+    def five_cropper(self, i, x):
+        return self.five_crops(i, x)
 
     def _get_size(self, img):
         if len(img.shape) == 3:
@@ -155,6 +161,10 @@ class RandomCropComputer(Dataset):
         return len(self.dataset)
 
 
+def identity(l):
+    return l
+
+
 @hydra.main(config_path="configs", config_name="train_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
@@ -181,7 +191,7 @@ def my_app(cfg: DictConfig) -> None:
                         1,
                         shuffle=False,
                         num_workers=cfg.num_workers,
-                        collate_fn=lambda l: l,
+                        collate_fn=identity,
                     )
                     for _ in tqdm(loader):
                         pass
