@@ -82,45 +82,48 @@ def my_app(cfg: DictConfig) -> None:
                     / f"nns_{cfg.model_type}_{nice_dataset_name}_{image_set}_{crop_type}_{res}.npz"
                 )
 
-                if not feature_cache_file.exists():
-                    print(f"{feature_cache_file} not found, computing")
-                    dataset = ContrastiveSegDataset(
-                        pytorch_data_dir=pytorch_data_dir,
-                        dataset_name=dataset_name,
-                        crop_type=crop_type,
-                        image_set=image_set,
-                        transform=get_transform(res, False, "center"),
-                        target_transform=get_transform(res, True, "center"),
-                        cfg=cfg,
-                    )
+                if feature_cache_file.exists():
+                    print(f"Skipping, already exists: {feature_cache_file}")
+                    continue
 
-                    loader = DataLoader(
-                        dataset,
-                        256,
-                        shuffle=False,
-                        num_workers=cfg.num_workers,
-                        pin_memory=False,
-                    )
+                print(f"{feature_cache_file} not found, computing")
+                dataset = ContrastiveSegDataset(
+                    pytorch_data_dir=pytorch_data_dir,
+                    dataset_name=dataset_name,
+                    crop_type=crop_type,
+                    image_set=image_set,
+                    transform=get_transform(res, False, "center"),
+                    target_transform=get_transform(res, True, "center"),
+                    cfg=cfg,
+                )
 
-                    with torch.no_grad():
-                        normed_feats = get_feats(par_model, loader)
-                        all_nns = []
-                        step = normed_feats.shape[0] // n_batches
-                        print(normed_feats.shape)
-                        for i in tqdm(range(0, normed_feats.shape[0], step)):
-                            # torch.cuda.empty_cache()
-                            batch_feats = normed_feats[i : i + step, :]
-                            pairwise_sims = torch.einsum(
-                                "nf,mf->nm", batch_feats, normed_feats
-                            )
-                            all_nns.append(torch.topk(pairwise_sims, 30)[1])
-                            del pairwise_sims
-                        nearest_neighbors = torch.cat(all_nns, dim=0)
+                loader = DataLoader(
+                    dataset,
+                    256,
+                    shuffle=False,
+                    num_workers=cfg.num_workers,
+                    pin_memory=False,
+                )
 
-                        np.savez_compressed(
-                            feature_cache_file, nns=nearest_neighbors.numpy()
+                with torch.no_grad():
+                    normed_feats = get_feats(par_model, loader)
+                    all_nns = []
+                    step = normed_feats.shape[0] // n_batches
+                    print(normed_feats.shape)
+                    for i in tqdm(range(0, normed_feats.shape[0], step)):
+                        # torch.cuda.empty_cache()
+                        batch_feats = normed_feats[i : i + step, :]
+                        pairwise_sims = torch.einsum(
+                            "nf,mf->nm", batch_feats, normed_feats
                         )
-                        print("Saved NNs", cfg.model_type, nice_dataset_name, image_set)
+                        all_nns.append(torch.topk(pairwise_sims, 30)[1])
+                        del pairwise_sims
+                    nearest_neighbors = torch.cat(all_nns, dim=0)
+
+                    np.savez_compressed(
+                        feature_cache_file, nns=nearest_neighbors.numpy()
+                    )
+                    print("Saved NNs", cfg.model_type, nice_dataset_name, image_set)
 
 
 if __name__ == "__main__":
