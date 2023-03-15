@@ -173,7 +173,7 @@ def prep_args():
         if len(arg.split("=")) == 2:
             new_args.append(arg)
         elif arg.startswith("--"):
-            new_args.append(arg[2:] + "=" + old_args.pop(0))
+            new_args.append(f"{arg[2:]}={old_args.pop(0)}")
         else:
             raise ValueError(f"Unexpected arg style {arg}")
     sys.argv = new_args
