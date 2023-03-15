@@ -53,9 +53,7 @@ class DinoFeaturizer(torch.nn.Module):
 
             msg = self.model.load_state_dict(state_dict, strict=False)
             print(
-                "Pretrained weights found at {} and loaded with msg: {}".format(
-                    cfg.pretrained_weights, msg
-                )
+                f"Pretrained weights found at {cfg.pretrained_weights} and loaded with msg: {msg}"
             )
         else:
             print(
@@ -111,7 +109,7 @@ class DinoFeaturizer(torch.nn.Module):
                 B, H, I, J, D = image_k.shape
                 image_feat = image_k.permute(0, 1, 4, 2, 3).reshape(B, H * D, I, J)
             else:
-                raise ValueError("Unknown feat type:{}".format(self.feat_type))
+                raise ValueError(f"Unknown feat type:{self.feat_type}")
 
             if return_class_feat:
                 return (
