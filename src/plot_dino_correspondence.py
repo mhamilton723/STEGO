@@ -1,19 +1,21 @@
 import os
 from os.path import join
-from utils import get_transform, load_model, prep_for_plot, remove_axes, prep_args
-from modules import FeaturePyramidNet, DinoFeaturizer, sample
-from data import ContrastiveSegDataset
+
 import hydra
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
+from matplotlib.colors import ListedColormap
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.utilities.seed import seed_everything
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from matplotlib.colors import ListedColormap
+
+from data import ContrastiveSegDataset
+from modules import DinoFeaturizer, FeaturePyramidNet, sample
+from utils import get_transform, load_model, prep_args, prep_for_plot, remove_axes
 
 
 def plot_heatmap(ax, image, heatmap, cmap="bwr", color=False, plot_img=True, symmetric=True):
