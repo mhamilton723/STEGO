@@ -135,7 +135,7 @@ def load_model(model_type, data_dir: Path):
             *list(model.children())[:-1] + [torch.nn.AdaptiveAvgPool2d((1, 1))]
         )
     else:
-        raise ValueError("No model: {} found".format(model_type))
+        raise ValueError(f"No model: {model_type} found")
 
     model.eval()
     model.cuda()
@@ -175,7 +175,7 @@ def prep_args():
         elif arg.startswith("--"):
             new_args.append(arg[2:] + "=" + old_args.pop(0))
         else:
-            raise ValueError("Unexpected arg style {}".format(arg))
+            raise ValueError(f"Unexpected arg style {arg}")
     sys.argv = new_args
 
 
@@ -188,7 +188,7 @@ def get_transform(res, is_label, crop_type):
         cropper = T.Lambda(lambda x: x)
         res = (res, res)
     else:
-        raise ValueError("Unknown Cropper {}".format(crop_type))
+        raise ValueError(f"Unknown Cropper {crop_type}")
     if is_label:
         return T.Compose([T.Resize(res, Image.NEAREST), cropper, ToTargetTensor()])
     else:
