@@ -1,8 +1,7 @@
 # See https://github.com/mhamilton723/STEGO/issues/16#issuecomment-1168772107
-import os
 from collections import defaultdict
 from multiprocessing import Pool, get_context
-from os.path import join
+from pathlib import Path
 
 import hydra
 import matplotlib.pyplot as plt
@@ -72,11 +71,11 @@ def batched_crf(pool, img_tensor, prob_tensor):
 @hydra.main(config_path="configs", config_name="eval_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     pytorch_data_dir = cfg.pytorch_data_dir
-    result_dir = f"../results/predictions/{cfg.experiment_name}"
-    os.makedirs(join(result_dir, "img"), exist_ok=True)
-    os.makedirs(join(result_dir, "label"), exist_ok=True)
-    os.makedirs(join(result_dir, "cluster"), exist_ok=True)
-    os.makedirs(join(result_dir, "picie"), exist_ok=True)
+    result_dir = Path(f"../results/predictions/{cfg.experiment_name}")
+    (result_dir / "img").mkdir(exist_ok=True)
+    (result_dir / "label").mkdir(exist_ok=True)
+    (result_dir / "cluster").mkdir(exist_ok=True)
+    (result_dir / "picie").mkdir(exist_ok=True)
 
     for model_path in cfg.model_paths:
         model = LitUnsupervisedSegmenter.load_from_checkpoint(model_path)
@@ -236,11 +235,9 @@ def my_app(cfg: DictConfig) -> None:
                 plot_label = (model.label_cmap[saved_data["label"][img_num]]).astype(
                     np.uint8
                 )
-                Image.fromarray(plot_img).save(
-                    join(join(result_dir, "img", str(img_num) + ".jpg"))
-                )
+                Image.fromarray(plot_img).save(result_dir / "img" / f"{img_num}.jpg")
                 Image.fromarray(plot_label).save(
-                    join(join(result_dir, "label", str(img_num) + ".png"))
+                    result_dir / "label" / f"{img_num}.png"
                 )
 
                 ax[0, i].imshow(plot_img)
@@ -254,7 +251,7 @@ def my_app(cfg: DictConfig) -> None:
                         ]
                     ).astype(np.uint8)
                     Image.fromarray(plot_cluster).save(
-                        join(join(result_dir, "cluster", str(img_num) + ".png"))
+                        result_dir / "cluster" / f"{img_num}.png"
                     )
                     ax[2, i].imshow(plot_cluster)
                 if run_picie:
@@ -263,7 +260,7 @@ def my_app(cfg: DictConfig) -> None:
                     ].astype(np.uint8)
                     ax[3, i].imshow(picie_img)
                     Image.fromarray(picie_img).save(
-                        join(join(result_dir, "picie", str(img_num) + ".png"))
+                        result_dir / "picie" / f"{img_num}.png"
                     )
 
             ax[0, 0].set_ylabel("Image", fontsize=26)
