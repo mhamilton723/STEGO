@@ -1,8 +1,7 @@
-import os
 import random
 import sys
 from datetime import datetime
-from os.path import join
+from pathlib import Path
 
 import hydra
 import matplotlib.pyplot as plt
@@ -150,9 +149,10 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
         else:
             dim = cfg.dim
 
-        data_dir = join(cfg.output_root, "data")
+        data_dir = Path(cfg.output_root) / "data"
         if cfg.arch == "feature-pyramid":
-            cut_model = load_model(cfg.model_type, data_dir).cuda()
+            # cut_model = load_model(cfg.model_type, data_dir).cuda()
+            cut_model = load_model(cfg.model_type, data_dir)
             self.net = FeaturePyramidNet(
                 cfg.granularity, cut_model, dim, cfg.continuous
             )
@@ -539,17 +539,17 @@ def my_app(cfg: DictConfig) -> None:
     OmegaConf.set_struct(cfg, False)
     print(OmegaConf.to_yaml(cfg))
     pytorch_data_dir = cfg.pytorch_data_dir
-    data_dir = join(cfg.output_root, "data")
-    log_dir = join(cfg.output_root, "logs")
-    checkpoint_dir = join(cfg.output_root, "checkpoints")
+    data_dir = Path(cfg.output_root) / "data"
+    log_dir = Path(cfg.output_root) / "logs"
+    checkpoint_dir = Path(cfg.output_root) / "checkpoints"
 
     prefix = "{}/{}_{}".format(cfg.log_dir, cfg.dataset_name, cfg.experiment_name)
     name = "{}_date_{}".format(prefix, datetime.now().strftime("%b%d_%H-%M-%S"))
     cfg.full_name = prefix
 
-    os.makedirs(data_dir, exist_ok=True)
-    os.makedirs(log_dir, exist_ok=True)
-    os.makedirs(checkpoint_dir, exist_ok=True)
+    data_dir.mkdir(exist_ok=True)
+    log_dir.mkdir(exist_ok=True)
+    checkpoint_dir.mkdir(exist_ok=True)
 
     seed_everything(seed=0)
 
@@ -625,7 +625,7 @@ def my_app(cfg: DictConfig) -> None:
 
     model = LitUnsupervisedSegmenter(train_dataset.n_classes, cfg)
 
-    tb_logger = TensorBoardLogger(join(log_dir, name), default_hp_metric=False)
+    tb_logger = TensorBoardLogger(log_dir / name, default_hp_metric=False)
 
     if cfg.submitting_to_aml:
         gpu_args = dict(gpus=1, val_check_interval=250)
@@ -646,7 +646,7 @@ def my_app(cfg: DictConfig) -> None:
         max_steps=cfg.max_steps,
         callbacks=[
             ModelCheckpoint(
-                dirpath=join(checkpoint_dir, name),
+                dirpath=checkpoint_dir / name,
                 every_n_train_steps=400,
                 save_top_k=2,
                 monitor="test/cluster/mIoU",
