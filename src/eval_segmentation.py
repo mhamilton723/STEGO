@@ -72,7 +72,7 @@ def batched_crf(pool, img_tensor, prob_tensor):
 @hydra.main(config_path="configs", config_name="eval_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     pytorch_data_dir = cfg.pytorch_data_dir
-    result_dir = "../results/predictions/{}".format(cfg.experiment_name)
+    result_dir = f"../results/predictions/{cfg.experiment_name}"
     os.makedirs(join(result_dir, "img"), exist_ok=True)
     os.makedirs(join(result_dir, "label"), exist_ok=True)
     os.makedirs(join(result_dir, "cluster"), exist_ok=True)
@@ -136,7 +136,7 @@ def my_app(cfg: DictConfig) -> None:
             # all_good_images = [ 5, 20, 56]
             all_good_images = [11, 32, 43, 52]
         else:
-            raise ValueError("Unknown Dataset {}".format(model.cfg.dataset_name))
+            raise ValueError(f"Unknown Dataset {model.cfg.dataset_name}")
         batch_nums = torch.tensor([n // (cfg.batch_size * 2) for n in all_good_images])
         batch_offsets = torch.tensor(
             [n % (cfg.batch_size * 2) for n in all_good_images]
