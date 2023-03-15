@@ -1,7 +1,12 @@
+import os
+import random
 import sys
 from datetime import datetime
+from os.path import join
 
 import hydra
+import matplotlib.pyplot as plt
+import numpy as np
 import pytorch_lightning as pl
 import seaborn as sns
 import torch.multiprocessing
@@ -12,10 +17,33 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.utilities.seed import seed_everything
 from torch.utils.data import DataLoader
+from torchvision import transforms as T
 
-from data import *
-from modules import *
-from utils import *
+from data import (
+    ContrastiveSegDataset,
+    create_cityscapes_colormap,
+    create_pascal_label_colormap,
+)
+from modules import (
+    ClusterLookup,
+    ContrastiveCorrelationLoss,
+    ContrastiveCRFLoss,
+    DinoFeaturizer,
+    FeaturePyramidNet,
+    norm,
+    sample,
+)
+from utils import (
+    UnsupervisedMetrics,
+    add_plot,
+    get_transform,
+    load_model,
+    one_hot_feats,
+    prep_args,
+    prep_for_plot,
+    remove_axes,
+    resize,
+)
 
 torch.multiprocessing.set_sharing_strategy("file_system")
 
@@ -136,9 +164,9 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
         self.train_cluster_probe = ClusterLookup(dim, n_classes)
 
         self.cluster_probe = ClusterLookup(dim, n_classes + cfg.extra_clusters)
-        self.linear_probe = nn.Conv2d(dim, n_classes, (1, 1))
+        self.linear_probe = torch.nn.Conv2d(dim, n_classes, (1, 1))
 
-        self.decoder = nn.Conv2d(dim, self.net.n_feats, (1, 1))
+        self.decoder = torch.nn.Conv2d(dim, self.net.n_feats, (1, 1))
 
         self.cluster_metrics = UnsupervisedMetrics(
             "test/cluster/", n_classes, cfg.extra_clusters, True
