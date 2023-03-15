@@ -112,7 +112,7 @@ def my_app(cfg: DictConfig) -> None:
     elif cfg.arch == "dino":
         net = DinoFeaturizer(cfg.dim, cfg)
     else:
-        raise ValueError("Unknown arch {}".format(cfg.arch))
+        raise ValueError(f"Unknown arch {cfg.arch}")
     net = net.cuda()
 
     for batch_val in loader:
