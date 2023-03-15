@@ -135,7 +135,7 @@ def get_class_labels(dataset_name):
     elif dataset_name == "potsdam":
         return ["roads and cars", "buildings and clutter", "trees and vegetation"]
     else:
-        raise ValueError("Unknown Dataset {}".format(dataset_name))
+        raise ValueError(f"Unknown Dataset {dataset_name}")
 
 
 class LitUnsupervisedSegmenter(pl.LightningModule):
@@ -159,7 +159,7 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
         elif cfg.arch == "dino":
             self.net = DinoFeaturizer(dim, cfg)
         else:
-            raise ValueError("Unknown arch {}".format(cfg.arch))
+            raise ValueError(f"Unknown arch {cfg.arch}")
 
         self.train_cluster_probe = ClusterLookup(dim, n_classes)
 
@@ -456,12 +456,12 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
                     ax.vlines(
                         np.arange(0, len(names) + 1),
                         color=[0.5, 0.5, 0.5],
-                        *ax.get_xlim()
+                        *ax.get_xlim(),
                     )
                     ax.hlines(
                         np.arange(0, len(names) + 1),
                         color=[0.5, 0.5, 0.5],
-                        *ax.get_ylim()
+                        *ax.get_ylim(),
                     )
                     plt.tight_layout()
                     add_plot(self.logger.experiment, "conf_matrix", self.global_step)
@@ -543,8 +543,8 @@ def my_app(cfg: DictConfig) -> None:
     log_dir = Path(cfg.output_root) / "logs"
     checkpoint_dir = Path(cfg.output_root) / "checkpoints"
 
-    prefix = "{}/{}_{}".format(cfg.log_dir, cfg.dataset_name, cfg.experiment_name)
-    name = "{}_date_{}".format(prefix, datetime.now().strftime("%b%d_%H-%M-%S"))
+    prefix = f"{cfg.log_dir}/{cfg.dataset_name}_{cfg.experiment_name}"
+    name = f"{prefix}_date_{datetime.now().strftime('%b%d_%H-%M-%S')}"
     cfg.full_name = prefix
 
     data_dir.mkdir(exist_ok=True)
@@ -653,7 +653,7 @@ def my_app(cfg: DictConfig) -> None:
                 mode="max",
             )
         ],
-        **gpu_args
+        **gpu_args,
     )
     trainer.fit(model, train_loader, val_loader)
 
