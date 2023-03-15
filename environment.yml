@@ -1,37 +1,35 @@
-channels:
-- anaconda
-- pytorch
-- conda-forge
-- menpo
-dependencies:
-- libffi=3.2.1
-- python=3.7
-- pip>=21.0,<22
-- pytorch==1.7.1
-- torchvision==0.8.2
-- scikit-image
-- opencv
-- pydensecrf
-- pytorch-lightning
-- pip:
-  - matplotlib>=3.3,<3.4
-  - psutil>=5.8,<5.9
-  - tqdm>=4.59,<4.60
-  - pandas>=1.1,<1.2
-  - scipy>=1.5,<1.6
-  - numpy>=1.10,<1.20
-  - tensorboard==2.4.0
-  - future==0.17.1
-  - --find-links https://pytorch-geometric.com/whl/torch-1.7.0+cu110.html
-  - kornia
-  - hydra-core
-  - wget
-  - seaborn
-  - easydict
-  - torchpq
-  - setuptools==59.5.0
-  - pyDeprecate==0.3.1
-  - mypy
-  - types-Pillow
-  - types-tqdm
 name: stego
+channels:
+  - pytorch
+  - anaconda
+  - conda-forge
+  - menpo
+dependencies:
+  - opencv=4.5.5
+  - pip
+  - python=3.10.4
+  - pytorch=1.13.1
+  - pytorch-lightning=1.9.4
+  - scikit-image=0.19.2
+  - torchvision=0.14.1
+  - pip:
+      - easydict==1.10
+      - future==0.18.3
+      - hydra-core==1.3.2
+      - kornia==0.6.10
+      - matplotlib==3.7.1
+      - mypy==1.1.1
+      - numpy==1.24.2
+      - pandas==1.5.3
+      - psutil==5.9.4
+      - pydensecrf @ git+https://github.com/lucasb-eyer/pydensecrf.git
+      - pydeprecate==0.3.2
+      - scipy==1.10.1
+      - seaborn==0.12.2
+      - setuptools==67.6.0
+      - tensorboard==2.12.0
+      - torchpq==0.3.0.5
+      - tqdm==4.65.0
+      - types-pillow==9.4.0.17
+      - types-tqdm==4.65.0.0
+      - wget==3.2
