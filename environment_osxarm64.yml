@@ -1,4 +1,4 @@
-name: stego
+name: stego2
 channels:
   - pytorch
   - anaconda
@@ -22,7 +22,6 @@ dependencies:
   - charset-normalizer=2.0.4
   - cloudpickle=2.0.0
   - cryptography=37.0.1
-  - cython=0.29.28
   - cytoolz=0.11.0
   - dask-core=2022.5.0
   - dbus=1.13.18
@@ -30,7 +29,6 @@ dependencies:
   - epoxy=1.5.4
   - expat=2.4.4
   - ffmpeg=4.2.2
-  - filelock=3.6.0
   - fontconfig=2.13.1
   - freetype=2.11.0
   - fribidi=1.0.10
@@ -40,7 +38,6 @@ dependencies:
   - giflib=5.2.1
   - glib=2.69.1
   - gmp=6.2.1
-  - gmpy2=2.1.2
   - gnutls=3.6.15
   - gobject-introspection=1.68.0
   - graphite2=1.3.14
@@ -54,7 +51,6 @@ dependencies:
   - idna=3.3
   - imagecodecs=2021.8.26
   - imageio=2.9.0
-  - jinja2=3.0.3
   - jpeg=9e
   - jxrlib=1.1
   - krb5=1.19.2
@@ -93,9 +89,6 @@ dependencies:
   - llvm-openmp=12.0.0
   - locket=1.0.0
   - lz4-c=1.9.3
-  - markupsafe=2.1.1
-  - mpc=1.1.0
-  - mpfr=4.0.2
   - ncurses=6.3
   - nettle=3.7.3
   - networkx=2.7.1
@@ -119,7 +112,7 @@ dependencies:
   - pyparsing=3.0.4
   - pysocks=1.7.1
   - python=3.10.4
-  - pytorch=2.0.0
+  - pytorch=1.13.1
   - pytorch-lightning=1.9.4
   - pywavelets=1.3.0
   - qt=5.15.2
@@ -128,12 +121,11 @@ dependencies:
   - scikit-image=0.19.2
   - snappy=1.1.9
   - sqlite=3.38.5
-  - sympy=1.10.1
   - tifffile=2021.7.2
   - tk=8.6.12
   - toolz=0.11.2
   - torchmetrics=0.11.4
-  - torchvision=0.15.0
+  - torchvision=0.14.1
   - typing-extensions=4.1.1
   - typing_extensions=4.1.1
   - tzdata=2022a
@@ -161,8 +153,8 @@ dependencies:
       - kiwisolver==1.4.4
       - kornia==0.6.10
       - markdown==3.4.1
+      - markupsafe==2.1.2
       - matplotlib==3.7.1
-      - mpmath==1.2.1
       - mypy==1.1.1
       - mypy-extensions==1.0.0
       - numpy==1.24.2
@@ -194,3 +186,4 @@ dependencies:
       - types-tqdm==4.65.0.0
       - werkzeug==2.2.3
       - wget==3.2
+prefix: /Users/mclapp/nb/mambaforge/envs/stego2
