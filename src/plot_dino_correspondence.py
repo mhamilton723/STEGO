@@ -1,5 +1,4 @@
-import os
-from os.path import join
+from pathlib import Path
 
 import hydra
 import matplotlib.animation as animation
@@ -18,7 +17,9 @@ from modules import DinoFeaturizer, FeaturePyramidNet, sample
 from utils import get_transform, load_model, prep_args, prep_for_plot, remove_axes
 
 
-def plot_heatmap(ax, image, heatmap, cmap="bwr", color=False, plot_img=True, symmetric=True):
+def plot_heatmap(
+    ax, image, heatmap, cmap="bwr", color=False, plot_img=True, symmetric=True
+):
     vmax = np.abs(heatmap).max()
     if not color:
         bw = np.dot(np.array(image)[..., :3], [0.2989, 0.5870, 0.1140])
@@ -30,12 +31,9 @@ def plot_heatmap(ax, image, heatmap, cmap="bwr", color=False, plot_img=True, sym
         kwargs = {}
 
     if plot_img:
-        return [
-            ax.imshow(image),
-            ax.imshow(heatmap, alpha=.5, cmap=cmap, **kwargs),
-        ]
+        return [ax.imshow(image), ax.imshow(heatmap, alpha=0.5, cmap=cmap, **kwargs)]
     else:
-        return [ax.imshow(heatmap, alpha=.5, cmap=cmap, **kwargs)]
+        return [ax.imshow(heatmap, alpha=0.5, cmap=cmap, **kwargs)]
 
 
 def get_heatmaps(net, img, img_pos, query_points):
@@ -44,18 +42,32 @@ def get_heatmaps(net, img, img_pos, query_points):
 
     sfeats1 = sample(feats1, query_points)
 
-    attn_intra = torch.einsum("nchw,ncij->nhwij", F.normalize(sfeats1, dim=1), F.normalize(feats1, dim=1))
+    attn_intra = torch.einsum(
+        "nchw,ncij->nhwij", F.normalize(sfeats1, dim=1), F.normalize(feats1, dim=1)
+    )
     attn_intra -= attn_intra.mean([3, 4], keepdims=True)
     attn_intra = attn_intra.clamp(0).squeeze(0)
 
-    attn_inter = torch.einsum("nchw,ncij->nhwij", F.normalize(sfeats1, dim=1), F.normalize(feats2, dim=1))
+    attn_inter = torch.einsum(
+        "nchw,ncij->nhwij", F.normalize(sfeats1, dim=1), F.normalize(feats2, dim=1)
+    )
     attn_inter -= attn_inter.mean([3, 4], keepdims=True)
     attn_inter = attn_inter.clamp(0).squeeze(0)
 
-    heatmap_intra = F.interpolate(
-        attn_intra, img.shape[2:], mode="bilinear", align_corners=True).squeeze(0).detach().cpu()
-    heatmap_inter = F.interpolate(
-        attn_inter, img_pos.shape[2:], mode="bilinear", align_corners=True).squeeze(0).detach().cpu()
+    heatmap_intra = (
+        F.interpolate(attn_intra, img.shape[2:], mode="bilinear", align_corners=True)
+        .squeeze(0)
+        .detach()
+        .cpu()
+    )
+    heatmap_inter = (
+        F.interpolate(
+            attn_inter, img_pos.shape[2:], mode="bilinear", align_corners=True
+        )
+        .squeeze(0)
+        .detach()
+        .cpu()
+    )
 
     return heatmap_intra, heatmap_inter
 
@@ -63,12 +75,12 @@ def get_heatmaps(net, img, img_pos, query_points):
 @hydra.main(config_path="configs", config_name="plot_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
-    pytorch_data_dir = cfg.pytorch_data_dir
-    data_dir = join(cfg.output_root, "data")
-    log_dir = join(cfg.output_root, "logs")
-    result_dir = join(cfg.output_root, "results", "correspondence")
-    os.makedirs(data_dir, exist_ok=True)
-    os.makedirs(log_dir, exist_ok=True)
+    pytorch_data_dir = Path(cfg.pytorch_data_dir)
+    data_dir = Path(cfg.output_root) / "data"
+    log_dir = Path(cfg.output_root) / "logs"
+    result_dir = Path(cfg.output_root) / "results" / "correspondence"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    log_dir.mkdir(parents=True, exist_ok=True)
     seed_everything(seed=0, workers=True)
     high_res = 512
 
@@ -93,7 +105,7 @@ def my_app(cfg: DictConfig) -> None:
         )
         loader = DataLoader(dataset, 16, shuffle=True, num_workers=cfg.num_workers)
 
-    data_dir = join(cfg.output_root, "data")
+    data_dir = Path(cfg.output_root) / "data"
     if cfg.arch == "feature-pyramid":
         cut_model = load_model(cfg.model_type, data_dir).cuda()
         net = FeaturePyramidNet(cfg.granularity, cut_model, cfg.dim, cfg.continuous)
@@ -112,24 +124,22 @@ def my_app(cfg: DictConfig) -> None:
         ListedColormap([(1, 0, 0, i / 255) for i in range(255)]),
         ListedColormap([(0, 1, 0, i / 255) for i in range(255)]),
         ListedColormap([(0, 0, 1, i / 255) for i in range(255)]),
-        ListedColormap([(1, 1, 0, i / 255) for i in range(255)])
+        ListedColormap([(1, 1, 0, i / 255) for i in range(255)]),
     ]
 
     with torch.no_grad():
         if cfg.plot_correspondence:
             img_num = 6
-            query_points = torch.tensor(
-                [
-                    [-.1, 0.0],
-                    [.5, .8],
-                    [-.7, -.7],
-                ]
-            ).reshape(1, 3, 1, 2).cuda()
+            query_points = (
+                torch.tensor([[-0.1, 0.0], [0.5, 0.8], [-0.7, -0.7]])
+                .reshape(1, 3, 1, 2)
+                .cuda()
+            )
 
-            img = batch["img"][img_num:img_num + 1]
-            img_pos = batch["img_pos"][img_num:img_num + 1]
+            img = batch["img"][img_num : img_num + 1]
+            img_pos = batch["img_pos"][img_num : img_num + 1]
 
-            plt.style.use('dark_background')
+            plt.style.use("dark_background")
             fig, axes = plt.subplots(1, 3, figsize=(3 * 5, 1 * 5), dpi=100)
             remove_axes(axes)
             axes[0].set_title("Image and Query Points", fontsize=20)
@@ -146,36 +156,55 @@ def my_app(cfg: DictConfig) -> None:
                 plot_img = point_num == 0
                 if plot_img:
                     axes[0].imshow(prep_for_plot(img[0]))
-                axes[0].scatter(img_point_h, img_point_w,
-                                c=colors[point_num], marker="x", s=500, linewidths=5)
+                axes[0].scatter(
+                    img_point_h,
+                    img_point_w,
+                    c=colors[point_num],
+                    marker="x",
+                    s=500,
+                    linewidths=5,
+                )
 
-                plot_heatmap(axes[1], prep_for_plot(img[0]) * .8, heatmap_intra[point_num],
-                             plot_img=plot_img, cmap=cmaps[point_num], symmetric=False)
-                plot_heatmap(axes[2], prep_for_plot(img_pos[0]) * .8, heatmap_inter[point_num],
-                             plot_img=plot_img, cmap=cmaps[point_num], symmetric=False)
+                plot_heatmap(
+                    axes[1],
+                    prep_for_plot(img[0]) * 0.8,
+                    heatmap_intra[point_num],
+                    plot_img=plot_img,
+                    cmap=cmaps[point_num],
+                    symmetric=False,
+                )
+                plot_heatmap(
+                    axes[2],
+                    prep_for_plot(img_pos[0]) * 0.8,
+                    heatmap_inter[point_num],
+                    plot_img=plot_img,
+                    cmap=cmaps[point_num],
+                    symmetric=False,
+                )
             plt.show()
 
         if cfg.plot_movie:
             img_num = 6
-            key_points = [
-                [-.7, -.7],
-                [-.1, 0.0],
-                [.5, .8],
-            ]
+            key_points = [[-0.7, -0.7], [-0.1, 0.0], [0.5, 0.8]]
             all_points = []
             for i in range(len(key_points)):
                 all_points.extend([key_points[i]] * 60)
 
                 if i < len(key_points) - 1:
                     all_points.extend(
-                        np.stack([
-                            np.linspace(key_points[i][0], key_points[i + 1][0], 50),
-                            np.linspace(key_points[i][1], key_points[i + 1][1], 50),
-                        ], axis=1).tolist())
-            query_points = torch.tensor(all_points).reshape(1, len(all_points), 1, 2).cuda()
+                        np.stack(
+                            [
+                                np.linspace(key_points[i][0], key_points[i + 1][0], 50),
+                                np.linspace(key_points[i][1], key_points[i + 1][1], 50),
+                            ],
+                            axis=1,
+                        ).tolist()
+                    )
+            query_points = (
+                torch.tensor(all_points).reshape(1, len(all_points), 1, 2).cuda()
+            )
 
-
-            plt.style.use('dark_background')
+            plt.style.use("dark_background")
             fig, axes = plt.subplots(1, 3, figsize=(3 * 5, 1 * 5), dpi=100)
             remove_axes(axes)
             axes[0].set_title("Image and Query Points", fontsize=20)
@@ -196,24 +225,43 @@ def my_app(cfg: DictConfig) -> None:
 
                 frame.append(axes[0].imshow(prep_for_plot(img[0])))
 
-                frame.extend([
-                    axes[0].scatter(img_point_h, img_point_w,
-                                    c=colors[0], marker="x", s=400, linewidths=4),
-                    *plot_heatmap(axes[1], prep_for_plot(img[0]) * .8, heatmap_intra[point_num],
-                                  cmap=cmaps[0], symmetric=False),
-                    *plot_heatmap(axes[2], prep_for_plot(img_pos[0]) * .8, heatmap_inter[point_num],
-                                  cmap=cmaps[0], symmetric=False)
-                ])
+                frame.extend(
+                    [
+                        axes[0].scatter(
+                            img_point_h,
+                            img_point_w,
+                            c=colors[0],
+                            marker="x",
+                            s=400,
+                            linewidths=4,
+                        ),
+                        *plot_heatmap(
+                            axes[1],
+                            prep_for_plot(img[0]) * 0.8,
+                            heatmap_intra[point_num],
+                            cmap=cmaps[0],
+                            symmetric=False,
+                        ),
+                        *plot_heatmap(
+                            axes[2],
+                            prep_for_plot(img_pos[0]) * 0.8,
+                            heatmap_inter[point_num],
+                            cmap=cmaps[0],
+                            symmetric=False,
+                        ),
+                    ]
+                )
 
                 frames.append(frame)
 
-            os.makedirs(result_dir, exist_ok=True)
+            result_dir.mkdir(parents=True, exist_ok=True)
 
             with tqdm(total=len(frames)) as pbar:
                 animation.ArtistAnimation(fig, frames, blit=True).save(
-                    join(result_dir, 'attention_interp.mp4'),
+                    result_dir / "attention_interp.mp4",
                     progress_callback=lambda i, n: pbar.update(),
-                    writer=animation.FFMpegWriter(fps=30))
+                    writer=animation.FFMpegWriter(fps=30),
+                )
 
 
 if __name__ == "__main__":
