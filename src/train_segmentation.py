@@ -10,11 +10,11 @@ import pytorch_lightning as pl
 import seaborn as sns
 import torch.multiprocessing
 import torch.nn.functional as F
+from lightning_fabric.utilities.seed import seed_everything
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
-from pytorch_lightning.utilities.seed import seed_everything
 from torch.utils.data import DataLoader
 from torchvision import transforms as T
 
@@ -45,6 +45,10 @@ from utils import (
 )
 
 torch.multiprocessing.set_sharing_strategy("file_system")
+
+# Dino library is good to look at for good code
+# https://github.com/facebookresearch/dino/blob/main/video_generation.py
+# DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 
 def get_class_labels(dataset_name):

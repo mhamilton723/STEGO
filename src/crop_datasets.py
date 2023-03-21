@@ -3,9 +3,9 @@ from pathlib import Path
 
 import hydra
 import torch
+from lightning_fabric.utilities.seed import seed_everything
 from omegaconf import DictConfig, OmegaConf
 from PIL import Image
-from pytorch_lightning.utilities.seed import seed_everything
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms as T
 from torchvision.transforms.functional import crop, five_crop, get_image_size
