@@ -1,21 +1,21 @@
 import io
 from datetime import datetime
 
-import PIL.Image
 import hydra
+import PIL.Image
 import pytorch_lightning as pl
 import seaborn as sns
+from lightning_fabric.utilities.seed import seed_everything
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
-from pytorch_lightning.utilities.seed import seed_everything
-from sklearn.metrics import auc, precision_recall_curve, average_precision_score
+from sklearn.metrics import auc, average_precision_score, precision_recall_curve
 from torch.utils.tensorboard.summary import hparams
 from torchvision.transforms import ToTensor
+
 from data import *
 from modules import *
 from train_segmentation import get_class_labels
-
 
 
 @torch.jit.script
