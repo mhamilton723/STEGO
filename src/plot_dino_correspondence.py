@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
+from lightning_fabric.utilities.seed import seed_everything
 from matplotlib.colors import ListedColormap
 from omegaconf import DictConfig, OmegaConf
-from pytorch_lightning.utilities.seed import seed_everything
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
