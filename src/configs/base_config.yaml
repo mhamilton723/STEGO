@@ -1,5 +1,7 @@
 defaults:
+  - dataset: cityscapes
   - override hydra/job_logging: custom
+
 num_workers: 10
 pytorch_data_dir: '/Users/mclapp/nb/ml/pytorch_data/'
 output_root: '../'

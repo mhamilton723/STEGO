@@ -3,51 +3,7 @@ defaults:
   - base_config
   - _self_
 
-# only used in crop_datasets.py and precompute_knns.py
-crop_knn:
-  dataset_names:
-    - cityscapes
-  image_sets:
-    - train
-    - val
-  crop_types:
-    - five
-  crop_ratios:
-    - 0.5
-
-# crop_knn:
-#   dataset_names:
-#     - cityscapes
-#     - cocostuff27
-#   image_sets:
-#     - train
-#     - val
-#   crop_types:
-#     - five
-#     - random
-#   crop_ratios:
-#     - 0.5
-#     - 0.7
-# crop_knn:
-#   dataset_names:
-#     - cocostuff27
-#     - cityscapes
-#     - potsdam
-#   image_sets:
-#     - val
-#     - train
-#   crop_types:
-#     - five
-#     - null
-# # To run on custom datasets
-# crop_knn:
-#   dataset_names:
-#     - directory
-#   crop_types:
-#     - null
-
 experiment_name: "exp1"
-log_dir: "cocostuff27"
 azureml_logging: True
 submitting_to_aml: False
 
@@ -56,12 +12,6 @@ max_steps: 5000
 batch_size: 16
 
 num_neighbors: 7
-dataset_name: "cocostuff27"
-
-# Used if dataset_name is "directory"
-dir_dataset_name: null
-dir_dataset_n_classes: 5
-
 has_labels: False
 crop_type: "five"
 crop_ratio: .5
@@ -107,86 +57,6 @@ pos_intra_weight: 0.67
 neg_inter_shift: 0.46
 pos_inter_shift: 0.12
 pos_intra_shift: 0.18
-
-# Potsdam vit small 1/31/22
-#neg_inter_weight: 0.63
-#pos_inter_weight: 0.25
-#pos_intra_weight: 0.67
-#neg_inter_shift: 0.46
-#pos_inter_shift: 0.02
-#pos_intra_shift: 0.08
-
-# Cocostuff27 vit small 1/31/22
-#neg_inter_weight: 0.63
-#pos_inter_weight: 0.25
-#pos_intra_weight: 0.67
-#neg_inter_shift: 0.66
-#pos_inter_shift: 0.02
-#pos_intra_shift: 0.08
-
-
-## Cocostuff27 10/3 vit_base
-
-#neg_inter_weight: 0.1538476246415498
-#pos_inter_weight: 1
-#pos_intra_weight: 0.1
-#
-#neg_inter_shift: 1
-#pos_inter_shift: 0.2
-#pos_intra_shift: 0.12
-
-
-## Cocostuff27 10/3 vit_small
-#neg_inter_weight: .63
-#pos_inter_weight: .25
-#pos_intra_weight: .67
-#
-#neg_inter_shift: .16
-#pos_inter_shift: .02
-#pos_intra_shift: .08
-
-
-
-## Cocostuff27 10/3 moco
-#neg_inter_weight: .63
-#pos_inter_weight: .25
-#pos_intra_weight: .67
-#
-#neg_inter_shift: .26
-#pos_inter_shift: .36
-#pos_intra_shift: .32
-
-#pos_inter_shift: .12
-#pos_intra_shift: .18
-
-## Cocostuff27
-#neg_inter_weight: .72
-#pos_inter_weight: .80
-#pos_intra_weight: .29
-#
-#neg_inter_shift: .86
-#pos_inter_shift: .04
-#pos_intra_shift: .34
-
-# Cityscapes 10/3
-
-#neg_inter_weight: 0.9058762625226623
-#pos_inter_weight: 0.577453483136995
-#pos_intra_weight: 1
-#
-#neg_inter_shift: 0.31361241889448443
-#pos_inter_shift: 0.1754346515479633
-#pos_intra_shift: 0.45828472207
-
-
-# Cityscapes
-#neg_inter_weight: .72
-#pos_inter_weight: .18
-#pos_intra_weight: .46
-#
-#neg_inter_shift: .25
-#pos_inter_shift: .20
-#pos_intra_shift: .25
 
 
 rec_weight: 0.0
