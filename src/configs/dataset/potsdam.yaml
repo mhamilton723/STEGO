@@ -13,12 +13,13 @@ crop_knn:
 
 # dataset_name: "potsdam"
 
-# Potsdam vit small 1/31/22
-neg_inter_weight: 0.63
-pos_inter_weight: 0.25
-pos_intra_weight: 0.67
-neg_inter_shift: 0.46
-pos_inter_shift: 0.02
-pos_intra_shift: 0.08
+train:
+  # Potsdam vit small 1/31/22
+  neg_inter_weight: 0.63
+  pos_inter_weight: 0.25
+  pos_intra_weight: 0.67
+  neg_inter_shift: 0.46
+  pos_inter_shift: 0.02
+  pos_intra_shift: 0.08
 
 log_dir: "potsdam"

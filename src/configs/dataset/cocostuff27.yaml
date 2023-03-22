@@ -13,44 +13,45 @@ crop_knn:
 
 # dataset_name: "cocostuff27"
 
-## Cocostuff27
-neg_inter_weight: .72
-pos_inter_weight: .80
-pos_intra_weight: .29
-neg_inter_shift: .86
-pos_inter_shift: .04
-pos_intra_shift: .34
+train:
+  ## Cocostuff27
+  neg_inter_weight: .72
+  pos_inter_weight: .80
+  pos_intra_weight: .29
+  neg_inter_shift: .86
+  pos_inter_shift: .04
+  pos_intra_shift: .34
 
-# Cocostuff27 vit small 1/31/22
-#neg_inter_weight: 0.63
-#pos_inter_weight: 0.25
-#pos_intra_weight: 0.67
-#neg_inter_shift: 0.66
-#pos_inter_shift: 0.02
-#pos_intra_shift: 0.08
+  # Cocostuff27 vit small 1/31/22
+  #neg_inter_weight: 0.63
+  #pos_inter_weight: 0.25
+  #pos_intra_weight: 0.67
+  #neg_inter_shift: 0.66
+  #pos_inter_shift: 0.02
+  #pos_intra_shift: 0.08
 
-## Cocostuff27 10/3 vit_base
-#neg_inter_weight: 0.1538476246415498
-#pos_inter_weight: 1
-#pos_intra_weight: 0.1
-#neg_inter_shift: 1
-#pos_inter_shift: 0.2
-#pos_intra_shift: 0.12
+  ## Cocostuff27 10/3 vit_base
+  #neg_inter_weight: 0.1538476246415498
+  #pos_inter_weight: 1
+  #pos_intra_weight: 0.1
+  #neg_inter_shift: 1
+  #pos_inter_shift: 0.2
+  #pos_intra_shift: 0.12
 
-## Cocostuff27 10/3 vit_small
-#neg_inter_weight: .63
-#pos_inter_weight: .25
-#pos_intra_weight: .67
-#neg_inter_shift: .16
-#pos_inter_shift: .02
-#pos_intra_shift: .08
+  ## Cocostuff27 10/3 vit_small
+  #neg_inter_weight: .63
+  #pos_inter_weight: .25
+  #pos_intra_weight: .67
+  #neg_inter_shift: .16
+  #pos_inter_shift: .02
+  #pos_intra_shift: .08
 
-## Cocostuff27 10/3 moco
-#neg_inter_weight: .63
-#pos_inter_weight: .25
-#pos_intra_weight: .67
-#neg_inter_shift: .26
-#pos_inter_shift: .36 (or .12)
-#pos_intra_shift: .32 (or .18)
+  ## Cocostuff27 10/3 moco
+  #neg_inter_weight: .63
+  #pos_inter_weight: .25
+  #pos_intra_weight: .67
+  #neg_inter_shift: .26
+  #pos_inter_shift: .36 (or .12)
+  #pos_intra_shift: .32 (or .18)
 
 log_dir: "cocostuff27"

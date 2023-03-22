@@ -18,7 +18,6 @@ train:
   neg_inter_weight: .72
   pos_inter_weight: .18
   pos_intra_weight: .46
-
   neg_inter_shift: .25
   pos_inter_shift: .20
   pos_intra_shift: .25
@@ -27,7 +26,6 @@ train:
   #neg_inter_weight: 0.9058762625226623
   #pos_inter_weight: 0.577453483136995
   #pos_intra_weight: 1
-  #
   #neg_inter_shift: 0.31361241889448443
   #pos_inter_shift: 0.1754346515479633
   #pos_intra_shift: 0.45828472207

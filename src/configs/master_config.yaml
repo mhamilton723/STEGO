@@ -1,6 +1,7 @@
 defaults:
   - dataset@_global_: cityscapes
   - override hydra/job_logging: custom
+  - _self_
 
 num_workers: 10
 pytorch_data_dir: '/Users/mclapp/nb/ml/pytorch_data/'
@@ -96,12 +97,12 @@ train:
   correspondence_weight: 1.0
 
   # IAROA vit small 1/31/22
-  neg_inter_weight: 0.63
-  pos_inter_weight: 0.25
-  pos_intra_weight: 0.67
-  neg_inter_shift: 0.46
-  pos_inter_shift: 0.12
-  pos_intra_shift: 0.18
+  # neg_inter_weight: 0.63
+  # pos_inter_weight: 0.25
+  # pos_intra_weight: 0.67
+  # neg_inter_shift: 0.46
+  # pos_inter_shift: 0.12
+  # pos_intra_shift: 0.18
 
   rec_weight: 0.0
   repulsion_weight: 0.0
