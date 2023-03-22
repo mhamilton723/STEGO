@@ -18,10 +18,10 @@ class DinoFeaturizer(torch.nn.Module):
         super().__init__()
         self.cfg = cfg
         self.dim = dim
-        patch_size = self.cfg.dino_patch_size
+        patch_size = self.cfg.train.dino_patch_size
         self.patch_size = patch_size
-        self.feat_type = self.cfg.dino_feat_type
-        arch = self.cfg.model_type
+        self.feat_type = self.cfg.train.dino_feat_type
+        arch = self.cfg.train.model_type
         self.model = vits.__dict__[arch](patch_size=patch_size, num_classes=0)
         for p in self.model.parameters():
             p.requires_grad = False
@@ -40,8 +40,8 @@ class DinoFeaturizer(torch.nn.Module):
         else:
             raise ValueError("Unknown arch and patch size")
 
-        if cfg.pretrained_weights is not None:
-            state_dict = torch.load(cfg.pretrained_weights, map_location="cpu")
+        if cfg.train.pretrained_weights is not None:
+            state_dict = torch.load(cfg.train.pretrained_weights, map_location="cpu")
             state_dict = state_dict["teacher"]
             # remove `module.` prefix
             state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
@@ -53,7 +53,7 @@ class DinoFeaturizer(torch.nn.Module):
 
             msg = self.model.load_state_dict(state_dict, strict=False)
             print(
-                f"Pretrained weights found at {cfg.pretrained_weights} and loaded with msg: {msg}"
+                f"Pretrained weights found at {cfg.train.pretrained_weights} and loaded with msg: {msg}"
             )
         else:
             print(
@@ -69,7 +69,7 @@ class DinoFeaturizer(torch.nn.Module):
         else:
             self.n_feats = 768
         self.cluster1 = self.make_clusterer(self.n_feats)
-        self.proj_type = cfg.projection_type
+        self.proj_type = cfg.train.projection_type
         if self.proj_type == "nonlinear":
             self.cluster2 = self.make_nonlinear_clusterer(self.n_feats)
 
@@ -123,7 +123,7 @@ class DinoFeaturizer(torch.nn.Module):
         else:
             code = image_feat
 
-        if self.cfg.dropout:
+        if self.cfg.train.dropout:
             return self.dropout(image_feat), code
         else:
             return image_feat, code
@@ -364,19 +364,19 @@ class ContrastiveCorrelationLoss(torch.nn.Module):
             # Comes straight from backbone which is currently frozen. this saves mem.
             fd = tensor_correlation(norm(f1), norm(f2))
 
-            if self.cfg.pointwise:
+            if self.cfg.train.pointwise:
                 old_mean = fd.mean()
                 fd -= fd.mean([3, 4], keepdim=True)
                 fd = fd - fd.mean() + old_mean
 
         cd = tensor_correlation(norm(c1), norm(c2))
 
-        if self.cfg.zero_clamp:
+        if self.cfg.train.zero_clamp:
             min_val = 0.0
         else:
             min_val = -9999.0
 
-        if self.cfg.stabalize:
+        if self.cfg.train.stabilize:
             loss = -cd.clamp(min_val, 0.8) * (fd - shift)
         else:
             loss = -cd.clamp(min_val) * (fd - shift)
@@ -394,12 +394,12 @@ class ContrastiveCorrelationLoss(torch.nn.Module):
     ):
         coord_shape = [
             orig_feats.shape[0],
-            self.cfg.feature_samples,
-            self.cfg.feature_samples,
+            self.cfg.train.feature_samples,
+            self.cfg.train.feature_samples,
             2,
         ]
 
-        if self.cfg.use_salience:
+        if self.cfg.train.use_salience:
             coords1_nonzero = sample_nonzero_locations(orig_salience, coord_shape)
             coords2_nonzero = sample_nonzero_locations(orig_salience_pos, coord_shape)
             coords1_reg = torch.rand(coord_shape, device=orig_feats.device) * 2 - 1
@@ -422,20 +422,20 @@ class ContrastiveCorrelationLoss(torch.nn.Module):
         code_pos = sample(orig_code_pos, coords2)
 
         pos_intra_loss, pos_intra_cd = self.helper(
-            feats, feats, code, code, self.cfg.pos_intra_shift
+            feats, feats, code, code, self.cfg.train.pos_intra_shift
         )
         pos_inter_loss, pos_inter_cd = self.helper(
-            feats, feats_pos, code, code_pos, self.cfg.pos_inter_shift
+            feats, feats_pos, code, code_pos, self.cfg.train.pos_inter_shift
         )
 
         neg_losses = []
         neg_cds = []
-        for i in range(self.cfg.neg_samples):
+        for i in range(self.cfg.train.neg_samples):
             perm_neg = super_perm(orig_feats.shape[0], orig_feats.device)
             feats_neg = sample(orig_feats[perm_neg], coords2)
             code_neg = sample(orig_code[perm_neg], coords2)
             neg_inter_loss, neg_inter_cd = self.helper(
-                feats, feats_neg, code, code_neg, self.cfg.neg_inter_shift
+                feats, feats_neg, code, code_neg, self.cfg.train.neg_inter_shift
             )
             neg_losses.append(neg_inter_loss)
             neg_cds.append(neg_inter_cd)

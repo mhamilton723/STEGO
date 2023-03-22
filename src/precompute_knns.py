@@ -23,7 +23,7 @@ def get_feats(model, loader):
     return torch.cat(all_feats, dim=0).contiguous()
 
 
-@hydra.main(config_path="configs", config_name="train_config", version_base="1.1")
+@hydra.main(config_path="configs", config_name="master_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
     pytorch_data_dir = Path(cfg.pytorch_data_dir)
@@ -46,7 +46,7 @@ def my_app(cfg: DictConfig) -> None:
     res = 224
     n_batches = 16
 
-    if cfg.arch == "dino":
+    if cfg.train.arch == "dino":
         from modules import DinoFeaturizer, LambdaLayer
 
         # no_ap_model = torch.nn.Sequential(
@@ -56,8 +56,8 @@ def my_app(cfg: DictConfig) -> None:
             DinoFeaturizer(20, cfg), LambdaLayer(lambda p: p[0])
         )  # dim doesent matter
     else:
-        # cut_model = load_model(cfg.model_type, output_root / "data").cuda
-        cut_model = load_model(cfg.model_type, output_root / "data")
+        # cut_model = load_model(cfg.train.model_type, output_root / "data").cuda
+        cut_model = load_model(cfg.train.model_type, output_root / "data")
         # no_ap_model = torch.nn.Sequential(*list(cut_model.children())[:-1]).cuda()
         no_ap_model = torch.nn.Sequential(*list(cut_model.children())[:-1])
     par_model = torch.nn.DataParallel(no_ap_model)
@@ -70,7 +70,7 @@ def my_app(cfg: DictConfig) -> None:
                     f"dataset_name={dataset_name}"
                 )
                 nice_dataset_name = (
-                    cfg.dir_dataset_name
+                    cfg.train.dir_dataset_name
                     if dataset_name == "directory"
                     else dataset_name
                 )
@@ -78,7 +78,7 @@ def my_app(cfg: DictConfig) -> None:
                 feature_cache_file = (
                     pytorch_data_dir
                     / "nns"
-                    / f"nns_{cfg.model_type}_{nice_dataset_name}_{image_set}_{crop_type}_{res}.npz"
+                    / f"nns_{cfg.train.model_type}_{nice_dataset_name}_{image_set}_{crop_type}_{res}.npz"
                 )
 
                 if feature_cache_file.exists():
@@ -100,7 +100,7 @@ def my_app(cfg: DictConfig) -> None:
                     dataset,
                     256,
                     shuffle=False,
-                    num_workers=cfg.num_workers,
+                    num_workers=cfg.train.num_workers,
                     pin_memory=False,
                 )
 
@@ -122,7 +122,9 @@ def my_app(cfg: DictConfig) -> None:
                     np.savez_compressed(
                         feature_cache_file, nns=nearest_neighbors.numpy()
                     )
-                    print("Saved NNs", cfg.model_type, nice_dataset_name, image_set)
+                    print(
+                        "Saved NNs", cfg.train.model_type, nice_dataset_name, image_set
+                    )
 
 
 if __name__ == "__main__":

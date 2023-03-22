@@ -35,7 +35,7 @@ output_root: '../'
 # lr: always 5e-4
 # pretrained_weights: always ~
 # use_salience: always False
-# stabalize: always False
+# stabilize: always False
 # stop_at_zero: always True
 
 
@@ -84,7 +84,7 @@ train:
   lr: 5e-4
   pretrained_weights: ~
   use_salience: False
-  stabalize: False
+  stabilize: False
   stop_at_zero: True
 
   # Feature Contrastive params
@@ -191,5 +191,5 @@ plot:
   lr: 5e-4
   pretrained_weights: ~
   use_salience: False
-  stabalize: False
+  stabilize: False
   stop_at_zero: True
