@@ -465,9 +465,9 @@ def select_dataset(
         dataset_class = PotsdamRaw
         extra_args = dict(coarse_labels=True)
     elif dataset_name == "directory":
-        n_classes = cfg.dir_dataset_n_classes
+        n_classes = cfg.train.dir_dataset_n_classes
         dataset_class = DirectoryDataset
-        extra_args = dict(path=cfg.dir_dataset_name)
+        extra_args = dict(path=cfg.train.dir_dataset_name)
     elif dataset_name == "cityscapes" and crop_type is None:
         n_classes = 27
         dataset_class = CityscapesSeg
@@ -476,7 +476,9 @@ def select_dataset(
         n_classes = 27
         dataset_class = CroppedDataset
         extra_args = dict(
-            dataset_name="cityscapes", crop_type=crop_type, crop_ratio=cfg.crop_ratio
+            dataset_name="cityscapes",
+            crop_type=crop_type,
+            crop_ratio=cfg.train.crop_ratio,
         )
     elif dataset_name == "cocostuff3":
         n_classes = 3
@@ -491,8 +493,8 @@ def select_dataset(
         dataset_class = CroppedDataset
         extra_args = dict(
             dataset_name="cocostuff27",
-            crop_type=cfg.crop_type,
-            crop_ratio=cfg.crop_ratio,
+            crop_type=cfg.train.crop_type,
+            crop_ratio=cfg.train.crop_ratio,
         )
     elif dataset_name == "cocostuff27" and crop_type is None:
         n_classes = 27
@@ -559,15 +561,15 @@ class ContrastiveSegDataset(Dataset):
         if model_type_override is not None:
             model_type = model_type_override
         else:
-            model_type = cfg.model_type
+            model_type = cfg.train.model_type
 
         nice_dataset_name = (
-            cfg.dir_dataset_name if dataset_name == "directory" else dataset_name
+            cfg.train.dir_dataset_name if dataset_name == "directory" else dataset_name
         )
         feature_cache_file = (
             Path(pytorch_data_dir)
             / "nns"
-            / f"nns_{model_type}_{nice_dataset_name}_{image_set}_{crop_type}_{cfg.res}.npz"
+            / f"nns_{model_type}_{nice_dataset_name}_{image_set}_{crop_type}_{cfg.train.res}.npz"
         )
         if pos_labels or pos_images:
             if not feature_cache_file.exists() or compute_knns:

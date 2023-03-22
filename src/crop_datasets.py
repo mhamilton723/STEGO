@@ -96,7 +96,7 @@ class RandomCropComputer(Dataset):
             T.ToTensor(),
             ToTargetTensor(),
             cfg=cfg,
-            num_neighbors=cfg.num_neighbors,
+            num_neighbors=cfg.train.num_neighbors,
             pos_labels=False,
             pos_images=False,
             mask=False,
@@ -165,15 +165,15 @@ def identity(l):
     return l
 
 
-@hydra.main(config_path="configs", config_name="train_config", version_base="1.1")
+@hydra.main(config_path="configs", config_name="master_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
     seed_everything(seed=0, workers=True)
 
-    dataset_names = cfg["crop_knn"]["dataset_names"]
-    image_sets = cfg["crop_knn"]["image_sets"]
-    crop_types = cfg["crop_knn"]["crop_types"]
-    crop_ratios = cfg["crop_knn"]["crop_ratios"]
+    dataset_names = cfg.crop_knn.dataset_names
+    image_sets = cfg.crop_knn.image_sets
+    crop_types = cfg.crop_knn.crop_types
+    crop_ratios = cfg.crop_knn.crop_ratios
 
     for crop_ratio in crop_ratios:
         for crop_type in crop_types:

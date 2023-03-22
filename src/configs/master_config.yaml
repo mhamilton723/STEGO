@@ -1,0 +1,195 @@
+defaults:
+  - dataset@_global_: cityscapes
+  - override hydra/job_logging: custom
+
+num_workers: 10
+pytorch_data_dir: '/Users/mclapp/nb/ml/pytorch_data/'
+output_root: '../'
+
+
+# Loader Config used multiple places
+# res: 224 (train, plot) or 320 (demo, eval)
+# num_neighbors: always 7
+# max_steps: always 5000
+# batch_size: 16 (train, plot) or 8 (demo, eval)
+# crop_type: "five" (train) or ~ (plot)
+# crop_ratio: always .5
+# loader_crop_type: always "center"
+
+
+# Model Config used multiple places
+# extra_clusters: always 0
+# use_true_labels: always False
+# use_recalibrator: always False
+# model_type: always "vit_small"
+# arch: always "dino"
+# use_fit_model: always False
+# dino_feat_type: always "feat"
+# projection_type: always "nonlinear"
+# dino_patch_size: always 8
+# granularity: always 1
+# continuous: always True
+# dim: always 70
+# dropout: always True
+# zero_clamp: always True
+# lr: always 5e-4
+# pretrained_weights: always ~
+# use_salience: always False
+# stabalize: always False
+# stop_at_zero: always True
+
+
+# Config for hydra itself
+hydra:
+  run:
+    dir: "."
+  output_subdir: null
+  job:
+    chdir: True # to disable warnings
+
+
+train:
+  experiment_name: "exp1"
+  azureml_logging: True
+  submitting_to_aml: False
+
+  # Loader params
+  max_steps: 5000
+  batch_size: 16
+
+  num_neighbors: 7
+  has_labels: False
+  crop_type: "five"
+  crop_ratio: .5
+  res: 224
+  loader_crop_type: "center"
+
+  # Model Params
+  extra_clusters: 0
+  use_true_labels: False
+  use_recalibrator: False
+  model_type: "vit_small"
+  arch: "dino"
+  use_fit_model: False
+  dino_feat_type: "feat"
+  projection_type: "nonlinear"
+  #projection_type: linear
+  dino_patch_size: 8
+  granularity: 1
+  continuous: True
+  dim: 70
+  dropout: True
+  zero_clamp: True
+
+  lr: 5e-4
+  pretrained_weights: ~
+  use_salience: False
+  stabalize: False
+  stop_at_zero: True
+
+  # Feature Contrastive params
+  pointwise: True
+  feature_samples: 11
+  neg_samples: 5
+  aug_alignment_weight: 0.0
+
+  correspondence_weight: 1.0
+
+  # IAROA vit small 1/31/22
+  neg_inter_weight: 0.63
+  pos_inter_weight: 0.25
+  pos_intra_weight: 0.67
+  neg_inter_shift: 0.46
+  pos_inter_shift: 0.12
+  pos_intra_shift: 0.18
+
+  rec_weight: 0.0
+  repulsion_weight: 0.0
+
+  # CRF Params
+  crf_weight: 0.0
+  alpha: .5
+  beta: .15
+  gamma: .05
+  w1: 10.0
+  w2: 3.0
+  shift: 0.00
+  crf_samples: 1000
+  color_space: "rgb"
+
+  reset_probe_steps: ~
+
+  # Logging params
+  n_images: 5
+  scalar_log_freq: 10
+  checkpoint_freq: 50
+  val_freq: 100
+  hist_freq: 100
+
+
+demo:
+  model_path: "../saved_models/cocostuff27_vit_base_5.ckpt"
+  image_dir: "/datadrive/pytorch-data/cocostuff/images/val2017"
+  experiment_name: "cocostuff_val"
+  res: 320
+  batch_size: 8
+  use_ddp: False
+
+
+eval:
+  experiment_name: "cocostuff"
+  res: 320
+  batch_size: 8
+  run_picie: False
+  run_crf: True
+  run_prediction: True
+  dark_mode: True
+  use_ddp: False
+
+  model_paths:
+    - "../saved_models/cocostuff27_vit_base_5.ckpt"
+    #- "../saved_models/cityscapes_vit_base_1.ckpt"
+    #- "../saved_models/potsdam_test.ckpt"
+
+
+plot:
+  experiment_name: "exp1"
+  log_dir: "cleaning"
+
+  plot_correspondence: True
+  plot_movie: True
+
+
+  # Loader params
+  max_steps: 5000
+
+  num_neighbors: 7
+
+  batch_size: 16
+  dataset_name: "cocostuff27"
+  crop_type: ~
+  crop_ratio: .5
+  res: 224
+  loader_crop_type: "center"
+
+  # Model Params
+  extra_clusters: 0
+  use_true_labels: False
+  use_recalibrator: False
+  model_type: "vit_small"
+  arch: "dino"
+  use_fit_model: False
+  dino_feat_type: "feat"
+  projection_type: "nonlinear"
+  dino_patch_size: 8
+  granularity: 1
+  continuous: True
+  dim: 70
+  dropout: True
+  zero_clamp: True
+
+  lr: 5e-4
+  pretrained_weights: ~
+  use_salience: False
+  stabalize: False
+  stop_at_zero: True

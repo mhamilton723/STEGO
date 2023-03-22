@@ -11,8 +11,6 @@ crop_knn:
   crop_ratios:
     - 0.5
 
-
-num_neighbors: 7
 # dataset_name: "potsdam"
 
 # Potsdam vit small 1/31/22
