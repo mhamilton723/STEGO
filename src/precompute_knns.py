@@ -100,7 +100,7 @@ def my_app(cfg: DictConfig) -> None:
                     dataset,
                     256,
                     shuffle=False,
-                    num_workers=cfg.train.num_workers,
+                    num_workers=cfg.num_workers,
                     pin_memory=False,
                 )
 

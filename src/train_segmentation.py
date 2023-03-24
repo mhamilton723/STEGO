@@ -148,37 +148,37 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
         self.cfg = cfg
         self.n_classes = n_classes
 
-        if not cfg.continuous:
+        if not cfg.train.continuous:
             dim = n_classes
         else:
-            dim = cfg.dim
+            dim = cfg.train.dim
 
         data_dir = Path(cfg.output_root) / "data"
-        if cfg.arch == "feature-pyramid":
-            # cut_model = load_model(cfg.model_type, data_dir).cuda()
-            cut_model = load_model(cfg.model_type, data_dir)
+        if cfg.train.arch == "feature-pyramid":
+            # cut_model = load_model(cfg.train.model_type, data_dir).cuda()
+            cut_model = load_model(cfg.train.model_type, data_dir)
             self.net = FeaturePyramidNet(
-                cfg.granularity, cut_model, dim, cfg.continuous
+                cfg.train.granularity, cut_model, dim, cfg.train.continuous
             )
-        elif cfg.arch == "dino":
+        elif cfg.train.arch == "dino":
             self.net = DinoFeaturizer(dim, cfg)
         else:
-            raise ValueError(f"Unknown arch {cfg.arch}")
+            raise ValueError(f"Unknown arch {cfg.train.arch}")
 
         self.train_cluster_probe = ClusterLookup(dim, n_classes)
 
-        self.cluster_probe = ClusterLookup(dim, n_classes + cfg.extra_clusters)
+        self.cluster_probe = ClusterLookup(dim, n_classes + cfg.train.extra_clusters)
         self.linear_probe = torch.nn.Conv2d(dim, n_classes, (1, 1))
 
         self.decoder = torch.nn.Conv2d(dim, self.net.n_feats, (1, 1))
 
         self.cluster_metrics = UnsupervisedMetrics(
-            "test/cluster/", n_classes, cfg.extra_clusters, True
+            "test/cluster/", n_classes, cfg.train.extra_clusters, True
         )
         self.linear_metrics = UnsupervisedMetrics("test/linear/", n_classes, 0, False)
 
         self.test_cluster_metrics = UnsupervisedMetrics(
-            "final/cluster/", n_classes, cfg.extra_clusters, True
+            "final/cluster/", n_classes, cfg.train.extra_clusters, True
         )
         self.test_linear_metrics = UnsupervisedMetrics(
             "final/linear/", n_classes, 0, False
@@ -186,7 +186,13 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
 
         self.linear_probe_loss_fn = torch.nn.CrossEntropyLoss()
         self.crf_loss_fn = ContrastiveCRFLoss(
-            cfg.crf_samples, cfg.alpha, cfg.beta, cfg.gamma, cfg.w1, cfg.w2, cfg.shift
+            cfg.train.crf_samples,
+            cfg.train.alpha,
+            cfg.train.beta,
+            cfg.train.gamma,
+            cfg.train.w1,
+            cfg.train.w2,
+            cfg.train.shift,
         )
 
         self.contrastive_corr_loss_fn = ContrastiveCorrelationLoss(cfg)
@@ -195,7 +201,7 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
 
         self.automatic_optimization = False
 
-        if self.cfg.dataset_name.startswith("cityscapes"):
+        if self.cfg.train.dataset_name.startswith("cityscapes"):
             self.label_cmap = create_cityscapes_colormap()
         else:
             self.label_cmap = create_pascal_label_colormap()
@@ -226,11 +232,11 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
             label_pos = batch["label_pos"]
 
         feats, code = self.net(img)
-        if self.cfg.correspondence_weight > 0:
+        if self.cfg.train.correspondence_weight > 0:
             feats_pos, code_pos = self.net(img_pos)
         log_args = dict(sync_dist=False, rank_zero_only=True)
 
-        if self.cfg.use_true_labels:
+        if self.cfg.train.use_true_labels:
             signal = one_hot_feats(label + 1, self.n_classes + 1)
             signal_pos = one_hot_feats(label_pos + 1, self.n_classes + 1)
         else:
@@ -240,18 +246,18 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
         loss = 0
 
         should_log_hist = (
-            (self.cfg.hist_freq is not None)
-            and (self.global_step % self.cfg.hist_freq == 0)
+            (self.cfg.train.hist_freq is not None)
+            and (self.global_step % self.cfg.train.hist_freq == 0)
             and (self.global_step > 0)
         )
-        if self.cfg.use_salience:
+        if self.cfg.train.use_salience:
             salience = batch["mask"].to(torch.float32).squeeze(1)
             salience_pos = batch["mask_pos"].to(torch.float32).squeeze(1)
         else:
             salience = None
             salience_pos = None
 
-        if self.cfg.correspondence_weight > 0:
+        if self.cfg.train.correspondence_weight > 0:
             (
                 pos_intra_loss,
                 pos_intra_cd,
@@ -284,18 +290,18 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
             self.log("cd/neg_inter", neg_inter_cd.mean(), **log_args)
 
             loss += (
-                self.cfg.pos_inter_weight * pos_inter_loss
-                + self.cfg.pos_intra_weight * pos_intra_loss
-                + self.cfg.neg_inter_weight * neg_inter_loss
-            ) * self.cfg.correspondence_weight
+                self.cfg.train.pos_inter_weight * pos_inter_loss
+                + self.cfg.train.pos_intra_weight * pos_intra_loss
+                + self.cfg.train.neg_inter_weight * neg_inter_loss
+            ) * self.cfg.train.correspondence_weight
 
-        if self.cfg.rec_weight > 0:
+        if self.cfg.train.rec_weight > 0:
             rec_feats = self.decoder(code)
             rec_loss = -(norm(rec_feats) * norm(feats)).sum(1).mean()
             self.log("loss/rec", rec_loss, **log_args)
-            loss += self.cfg.rec_weight * rec_loss
+            loss += self.cfg.train.rec_weight * rec_loss
 
-        if self.cfg.aug_alignment_weight > 0:
+        if self.cfg.train.aug_alignment_weight > 0:
             orig_feats_aug, orig_code_aug = self.net(img_aug)
             downsampled_coord_aug = resize(
                 coord_aug.permute(0, 3, 1, 2), orig_code_aug.shape[2]
@@ -306,12 +312,12 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
                 norm(orig_code_aug),
             ).mean()
             self.log("loss/aug_alignment", aug_alignment, **log_args)
-            loss += self.cfg.aug_alignment_weight * aug_alignment
+            loss += self.cfg.train.aug_alignment_weight * aug_alignment
 
-        if self.cfg.crf_weight > 0:
+        if self.cfg.train.crf_weight > 0:
             crf = self.crf_loss_fn(resize(img, 56), norm(resize(code, 56))).mean()
             self.log("loss/crf", crf, **log_args)
-            loss += self.cfg.crf_weight * crf
+            loss += self.cfg.train.crf_weight * crf
 
         flat_label = label.reshape(-1)
         mask = (flat_label >= 0) & (flat_label < self.n_classes)
@@ -340,8 +346,8 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
         linear_probe_optim.step()
 
         if (
-            self.cfg.reset_probe_steps is not None
-            and self.global_step == self.cfg.reset_probe_steps
+            self.cfg.train.reset_probe_steps is not None
+            and self.global_step == self.cfg.train.reset_probe_steps
         ):
             print("RESETTING PROBES")
             self.linear_probe.reset_parameters()
@@ -385,10 +391,12 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
             self.cluster_metrics.update(cluster_preds, label)
 
             return {
-                "img": img[: self.cfg.n_images].detach().cpu(),
-                "linear_preds": linear_preds[: self.cfg.n_images].detach().cpu(),
-                "cluster_preds": cluster_preds[: self.cfg.n_images].detach().cpu(),
-                "label": label[: self.cfg.n_images].detach().cpu(),
+                "img": img[: self.cfg.train.n_images].detach().cpu(),
+                "linear_preds": linear_preds[: self.cfg.train.n_images].detach().cpu(),
+                "cluster_preds": cluster_preds[: self.cfg.train.n_images]
+                .detach()
+                .cpu(),
+                "label": label[: self.cfg.train.n_images].detach().cpu(),
             }
 
     def validation_epoch_end(self, outputs) -> None:
@@ -399,15 +407,17 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
                 **self.cluster_metrics.compute(),
             }
 
-            if self.trainer.is_global_zero and not self.cfg.submitting_to_aml:
+            if self.trainer.is_global_zero and not self.cfg.train.submitting_to_aml:
                 # output_num = 0
                 output_num = random.randint(0, len(outputs) - 1)
                 output = {k: v.detach().cpu() for k, v in outputs[output_num].items()}
 
                 fig, ax = plt.subplots(
-                    4, self.cfg.n_images, figsize=(self.cfg.n_images * 3, 4 * 3)
+                    4,
+                    self.cfg.train.n_images,
+                    figsize=(self.cfg.train.n_images * 3, 4 * 3),
                 )
-                for i in range(self.cfg.n_images):
+                for i in range(self.cfg.train.n_images):
                     ax[0, i].imshow(prep_for_plot(output["img"][i]))
                     ax[1, i].imshow(self.label_cmap[output["label"][i]])
                     ax[2, i].imshow(self.label_cmap[output["linear_preds"][i]])
@@ -426,7 +436,7 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
                 plt.tight_layout()
                 add_plot(self.logger.experiment, "plot_labels", self.global_step)
 
-                if self.cfg.has_labels:
+                if self.cfg.train.has_labels:
                     fig = plt.figure(figsize=(13, 10))
                     ax = fig.gca()
                     hist = (
@@ -436,8 +446,8 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
                     sns.heatmap(hist.t(), annot=False, fmt="g", ax=ax, cmap="Blues")
                     ax.set_xlabel("Predicted labels")
                     ax.set_ylabel("True labels")
-                    names = get_class_labels(self.cfg.dataset_name)
-                    if self.cfg.extra_clusters:
+                    names = get_class_labels(self.cfg.train.dataset_name)
+                    if self.cfg.train.extra_clusters:
                         names = names + ["Extra"]
                     ax.set_xticks(np.arange(0, len(names)) + 0.5)
                     ax.set_yticks(np.arange(0, len(names)) + 0.5)
@@ -482,7 +492,7 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
 
                     fig, ax = plt.subplots(1, 2, figsize=(2 * 5, 1 * 4))
                     ax[0].bar(
-                        range(self.n_classes + self.cfg.extra_clusters),
+                        range(self.n_classes + self.cfg.train.extra_clusters),
                         self.cluster_metrics.histogram.sum(0).cpu(),
                         tick_label=names,
                         color=colors,
@@ -493,7 +503,7 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
                     ax[0].tick_params(axis="x", labelrotation=90)
 
                     ax[1].bar(
-                        range(self.n_classes + self.cfg.extra_clusters),
+                        range(self.n_classes + self.cfg.train.extra_clusters),
                         self.cluster_metrics.histogram.sum(1).cpu(),
                         tick_label=names,
                         color=colors,
@@ -511,7 +521,7 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
             if self.global_step > 2:
                 self.log_dict(tb_metrics)
 
-                if self.trainer.is_global_zero and self.cfg.azureml_logging:
+                if self.trainer.is_global_zero and self.cfg.train.azureml_logging:
                     from azureml.core.run import Run
 
                     run_logger = Run.get_context()
@@ -524,10 +534,10 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
     def configure_optimizers(self):
         main_params = list(self.net.parameters())
 
-        if self.cfg.rec_weight > 0:
+        if self.cfg.train.rec_weight > 0:
             main_params.extend(self.decoder.parameters())
 
-        net_optim = torch.optim.Adam(main_params, lr=self.cfg.lr)
+        net_optim = torch.optim.Adam(main_params, lr=self.cfg.train.lr)
         linear_probe_optim = torch.optim.Adam(
             list(self.linear_probe.parameters()), lr=5e-3
         )
@@ -538,7 +548,7 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
         return net_optim, linear_probe_optim, cluster_probe_optim
 
 
-@hydra.main(config_path="configs", config_name="train_config", version_base="1.1")
+@hydra.main(config_path="configs", config_name="master_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     OmegaConf.set_struct(cfg, False)
     print(OmegaConf.to_yaml(cfg))
@@ -547,9 +557,9 @@ def my_app(cfg: DictConfig) -> None:
     log_dir = Path(cfg.output_root) / "logs"
     checkpoint_dir = Path(cfg.output_root) / "checkpoints"
 
-    prefix = f"{cfg.log_dir}/{cfg.dataset_name}_{cfg.experiment_name}"
+    prefix = f"{cfg.train.log_dir}/{cfg.train.dataset_name}_{cfg.train.experiment_name}"
     name = f"{prefix}_date_{datetime.now().strftime('%b%d_%H-%M-%S')}"
-    cfg.full_name = prefix
+    cfg.train.full_name = prefix
 
     data_dir.mkdir(exist_ok=True)
     log_dir.mkdir(exist_ok=True)
@@ -561,7 +571,10 @@ def my_app(cfg: DictConfig) -> None:
     print(cfg.output_root)
 
     geometric_transforms = T.Compose(
-        [T.RandomHorizontalFlip(), T.RandomResizedCrop(size=cfg.res, scale=(0.8, 1.0))]
+        [
+            T.RandomHorizontalFlip(),
+            T.RandomResizedCrop(size=cfg.train.res, scale=(0.8, 1.0)),
+        ]
     )
     photometric_transforms = T.Compose(
         [
@@ -575,28 +588,28 @@ def my_app(cfg: DictConfig) -> None:
 
     train_dataset = ContrastiveSegDataset(
         pytorch_data_dir=pytorch_data_dir,
-        dataset_name=cfg.dataset_name,
-        crop_type=cfg.crop_type,
+        dataset_name=cfg.train.dataset_name,
+        crop_type=cfg.train.crop_type,
         image_set="train",
-        transform=get_transform(cfg.res, False, cfg.loader_crop_type),
-        target_transform=get_transform(cfg.res, True, cfg.loader_crop_type),
+        transform=get_transform(cfg.train.res, False, cfg.train.loader_crop_type),
+        target_transform=get_transform(cfg.train.res, True, cfg.train.loader_crop_type),
         cfg=cfg,
         aug_geometric_transform=geometric_transforms,
         aug_photometric_transform=photometric_transforms,
-        num_neighbors=cfg.num_neighbors,
+        num_neighbors=cfg.train.num_neighbors,
         mask=True,
         pos_images=True,
         pos_labels=True,
     )
 
-    if cfg.dataset_name == "voc":
+    if cfg.train.dataset_name == "voc":
         val_loader_crop = None
     else:
         val_loader_crop = "center"
 
     val_dataset = ContrastiveSegDataset(
         pytorch_data_dir=pytorch_data_dir,
-        dataset_name=cfg.dataset_name,
+        dataset_name=cfg.train.dataset_name,
         crop_type=None,
         image_set="val",
         transform=get_transform(320, False, val_loader_crop),
@@ -608,16 +621,16 @@ def my_app(cfg: DictConfig) -> None:
     # val_dataset = MaterializedDataset(val_dataset)
     train_loader = DataLoader(
         train_dataset,
-        cfg.batch_size,
+        cfg.train.batch_size,
         shuffle=True,
         num_workers=cfg.num_workers,
         pin_memory=True,
     )
 
-    if cfg.submitting_to_aml:
+    if cfg.train.submitting_to_aml:
         val_batch_size = 16
     else:
-        val_batch_size = cfg.batch_size
+        val_batch_size = cfg.train.batch_size
 
     val_loader = DataLoader(
         val_dataset,
@@ -631,23 +644,25 @@ def my_app(cfg: DictConfig) -> None:
 
     tb_logger = TensorBoardLogger(log_dir / name, default_hp_metric=False)
 
-    if cfg.submitting_to_aml:
+    if cfg.train.submitting_to_aml:
         gpu_args = dict(gpus=1, val_check_interval=250)
 
         if gpu_args["val_check_interval"] > len(train_loader):
             gpu_args.pop("val_check_interval")
 
     else:
-        gpu_args = dict(gpus=-1, accelerator="ddp", val_check_interval=cfg.val_freq)
-        # gpu_args = dict(gpus=1, accelerator='ddp', val_check_interval=cfg.val_freq)
+        gpu_args = dict(
+            gpus=-1, accelerator="ddp", val_check_interval=cfg.train.val_freq
+        )
+        # gpu_args = dict(gpus=1, accelerator='ddp', val_check_interval=cfg.train.val_freq)
 
         if gpu_args["val_check_interval"] > len(train_loader) // 4:
             gpu_args.pop("val_check_interval")
 
     trainer = Trainer(
-        log_every_n_steps=cfg.scalar_log_freq,
+        log_every_n_steps=cfg.train.scalar_log_freq,
         logger=tb_logger,
-        max_steps=cfg.max_steps,
+        max_steps=cfg.train.max_steps,
         callbacks=[
             ModelCheckpoint(
                 dirpath=checkpoint_dir / name,

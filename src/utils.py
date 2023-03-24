@@ -190,10 +190,17 @@ def get_transform(res, is_label, crop_type):
     else:
         raise ValueError(f"Unknown Cropper {crop_type}")
     if is_label:
-        return T.Compose([T.Resize(res, Image.NEAREST), cropper, ToTargetTensor()])
+        return T.Compose(
+            [T.Resize(res, T.InterpolationMode.NEAREST), cropper, ToTargetTensor()]
+        )
     else:
         return T.Compose(
-            [T.Resize(res, Image.NEAREST), cropper, T.ToTensor(), normalize]
+            [
+                T.Resize(res, T.InterpolationMode.NEAREST),
+                cropper,
+                T.ToTensor(),
+                normalize,
+            ]
         )
 
 
