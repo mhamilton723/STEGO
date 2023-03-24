@@ -86,10 +86,12 @@ def my_app(cfg: DictConfig) -> None:
             picie_state = torch.load(
                 "../saved_models/picie_and_probes.pth", map_location=torch.device("cpu")
             )
-            # picie = picie_state["model"].cuda()
-            # picie_cluster_probe = picie_state["cluster_probe"].module.cuda()
-            picie = picie_state["model"]
-            picie_cluster_probe = picie_state["cluster_probe"].module
+            if cfg.use_cuda:
+                picie = picie_state["model"].cuda()
+                picie_cluster_probe = picie_state["cluster_probe"].module.cuda()
+            else:
+                picie = picie_state["model"]
+                picie_cluster_probe = picie_state["cluster_probe"].module
             picie_cluster_metrics = picie_state["cluster_metrics"]
 
         loader_crop = "center"
@@ -113,8 +115,10 @@ def my_app(cfg: DictConfig) -> None:
             multiprocessing_context=torch.multiprocessing.get_context("spawn"),
         )
 
-        # model.eval().cuda()
-        model.eval()
+        if cfg.use_cuda:
+            model.eval().cuda()
+        else:
+            model.eval()
 
         if cfg.eval.use_ddp:
             par_model = torch.nn.DataParallel(model.net)
@@ -150,10 +154,12 @@ def my_app(cfg: DictConfig) -> None:
         with Pool(cfg.num_workers + 5) as pool:
             for i, batch in enumerate(tqdm(test_loader)):
                 with torch.no_grad():
-                    # img = batch["img"].cuda()
-                    # label = batch["label"].cuda()
-                    img = batch["img"]
-                    label = batch["label"]
+                    if cfg.use_cuda:
+                        img = batch["img"].cuda()
+                        label = batch["label"].cuda()
+                    else:
+                        img = batch["img"]
+                        label = batch["label"]
 
                     feats, code1 = par_model(img)
                     feats, code2 = par_model(img.flip(dims=[3]))
@@ -167,14 +173,20 @@ def my_app(cfg: DictConfig) -> None:
                     cluster_probs = model.cluster_probe(code, 2, log_probs=True)
 
                     if cfg.eval.run_crf:
-                        # linear_preds = (
-                        #     batched_crf(pool, img, linear_probs).argmax(1).cuda()
-                        # )
-                        # cluster_preds = (
-                        #     batched_crf(pool, img, cluster_probs).argmax(1).cuda()
-                        # )
-                        linear_preds = batched_crf(pool, img, linear_probs).argmax(1)
-                        cluster_preds = batched_crf(pool, img, cluster_probs).argmax(1)
+                        if cfg.use_cuda:
+                            linear_preds = (
+                                batched_crf(pool, img, linear_probs).argmax(1).cuda()
+                            )
+                            cluster_preds = (
+                                batched_crf(pool, img, cluster_probs).argmax(1).cuda()
+                            )
+                        else:
+                            linear_preds = batched_crf(pool, img, linear_probs).argmax(
+                                1
+                            )
+                            cluster_preds = batched_crf(
+                                pool, img, cluster_probs
+                            ).argmax(1)
                     else:
                         linear_preds = linear_probs.argmax(1)
                         cluster_preds = cluster_probs.argmax(1)

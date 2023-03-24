@@ -44,7 +44,10 @@ def my_app(cfg: DictConfig) -> None:
         "../saved_models/potsdam_test.ckpt"
     )
     print(OmegaConf.to_yaml(model.cfg))
-    model.eval().cuda()
+    if cfg.use_cuda:
+        model.eval().cuda()
+    else:
+        model.eval()
     par_model = torch.nn.DataParallel(model.net)
 
     outputs = defaultdict(list)
@@ -53,8 +56,12 @@ def my_app(cfg: DictConfig) -> None:
             if i > 100:
                 break
 
-            img = batch["img"].cuda()
-            label = batch["label"].cuda()
+            if cfg.use_cuda:
+                img = batch["img"].cuda()
+                label = batch["label"].cuda()
+            else:
+                img = batch["img"]
+                label = batch["label"]
             feats, code1 = par_model(img)
             feats, code2 = par_model(img.flip(dims=[3]))
             code = (code1 + code2.flip(dims=[3])) / 2
@@ -114,9 +121,14 @@ def my_app(cfg: DictConfig) -> None:
     ax[1].imshow(reshaped_preds)
     ax[2].imshow(reshaped_label)
 
-    Image.fromarray(reshaped_img.cuda()).save(
-        join(join(result_dir, "img", str(img_num) + ".png"))
-    )
+    if cfg.use_cuda:
+        Image.fromarray(reshaped_img.cuda()).save(
+            join(join(result_dir, "img", str(img_num) + ".png"))
+        )
+    else:
+        Image.fromarray(reshaped_img).save(
+            join(join(result_dir, "img", str(img_num) + ".png"))
+        )
     Image.fromarray(reshaped_preds).save(
         join(join(result_dir, "cluster", str(img_num) + ".png"))
     )

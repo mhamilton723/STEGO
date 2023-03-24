@@ -138,7 +138,8 @@ def load_model(model_type, data_dir: Path):
         raise ValueError(f"No model: {model_type} found")
 
     model.eval()
-    model.cuda()
+    if cfg.use_cuda:
+        model.cuda()
     return model
 
 

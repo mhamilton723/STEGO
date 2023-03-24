@@ -104,26 +104,40 @@ def my_app(cfg: DictConfig) -> None:
     for i in range(1):
         next(load_iter)
     pack = next(load_iter)
-    pack = {k: v.cuda(non_blocking=True) for k, v in pack.items()}
+    if cfg.use_cuda:
+        pack = {k: v.cuda(non_blocking=True) for k, v in pack.items()}
     ind = pack["ind"]
     img = pack["img"]
 
-    net = CodeSpaceTable(continuous, n_images, dim, img.shape[2], img.shape[3]).cuda()
+    if cfg.use_cuda:
+        net = CodeSpaceTable(
+            continuous, n_images, dim, img.shape[2], img.shape[3]
+        ).cuda()
+    else:
+        net = CodeSpaceTable(continuous, n_images, dim, img.shape[2], img.shape[3])
     optim = torch.optim.Adam(list(net.parameters()), lr=1e-2)
 
     loss_func = ContrastiveCRFLoss(
         cfg.crf_samples, cfg.alpha, cfg.beta, cfg.gamma, cfg.w1, cfg.w2, cfg.shift
     )
 
-    def to_normed_lab(img):
+    def to_normed_lab(img, cfg):
         img_t = rgb_to_lab(img)
-        img_t /= (
-            torch.tensor([100, 128 * 2, 128 * 2])
-            .unsqueeze(0)
-            .unsqueeze(-1)
-            .unsqueeze(-1)
-            .cuda()
-        )
+        if cfg.use_cuda:
+            img_t /= (
+                torch.tensor([100, 128 * 2, 128 * 2])
+                .unsqueeze(0)
+                .unsqueeze(-1)
+                .unsqueeze(-1)
+                .cuda()
+            )
+        else:
+            img_t /= (
+                torch.tensor([100, 128 * 2, 128 * 2])
+                .unsqueeze(0)
+                .unsqueeze(-1)
+                .unsqueeze(-1)
+            )
         return img_t
 
     for i in tqdm(range(cfg.epochs)):
@@ -131,7 +145,7 @@ def my_app(cfg: DictConfig) -> None:
         if cfg.color_space == "rgb":
             img_t = img
         elif cfg.color_space == "lab":
-            img_t = to_normed_lab(img)
+            img_t = to_normed_lab(img, cfg)
         else:
             raise ValueError("unknown color space: {}".format(cfg.color_space))
 

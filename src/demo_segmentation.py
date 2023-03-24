@@ -57,7 +57,10 @@ def my_app(cfg: DictConfig) -> None:
         collate_fn=flexible_collate,
     )
 
-    model.eval().cuda()
+    if cfg.use_cuda:
+        model.eval().cuda()
+    else:
+        model.eval()
     if cfg.demo.use_ddp:
         par_model = torch.nn.DataParallel(model.net)
     else:
@@ -65,7 +68,8 @@ def my_app(cfg: DictConfig) -> None:
 
     for i, (img, name) in enumerate(tqdm(loader)):
         with torch.no_grad():
-            img = img.cuda()
+            if cfg.use_cuda:
+                img = img.cuda()
             feats, code1 = par_model(img)
             feats, code2 = par_model(img.flip(dims=[3]))
             code = (code1 + code2.flip(dims=[3])) / 2

@@ -13,12 +13,14 @@ from data import ContrastiveSegDataset
 from utils import get_transform, load_model, prep_args
 
 
-def get_feats(model, loader):
+def get_feats(model, loader, cfg):
     all_feats = []
     for pack in tqdm(loader):
         img = pack["img"]
-        # feats = F.normalize(model.forward(img.cuda()).mean([2, 3]), dim=1)
-        feats = F.normalize(model.forward(img).mean([2, 3]), dim=1)
+        if cfg.use_cuda:
+            feats = F.normalize(model.forward(img.cuda()).mean([2, 3]), dim=1)
+        else:
+            feats = F.normalize(model.forward(img).mean([2, 3]), dim=1)
         all_feats.append(feats.to("cpu", non_blocking=True))
     return torch.cat(all_feats, dim=0).contiguous()
 
@@ -49,17 +51,22 @@ def my_app(cfg: DictConfig) -> None:
     if cfg.train.arch == "dino":
         from modules import DinoFeaturizer, LambdaLayer
 
-        # no_ap_model = torch.nn.Sequential(
-        #     DinoFeaturizer(20, cfg), LambdaLayer(lambda p: p[0])  # dim doesent matter
-        # ).cuda()
-        no_ap_model = torch.nn.Sequential(
-            DinoFeaturizer(20, cfg), LambdaLayer(lambda p: p[0])
-        )  # dim doesent matter
+        if cfg.use_cuda:
+            no_ap_model = torch.nn.Sequential(
+                DinoFeaturizer(20, cfg),
+                LambdaLayer(lambda p: p[0]),  # dim doesent matter
+            ).cuda()
+        else:
+            no_ap_model = torch.nn.Sequential(
+                DinoFeaturizer(20, cfg), LambdaLayer(lambda p: p[0])
+            )  # dim doesent matter
     else:
-        # cut_model = load_model(cfg.train.model_type, output_root / "data").cuda
-        cut_model = load_model(cfg.train.model_type, output_root / "data")
-        # no_ap_model = torch.nn.Sequential(*list(cut_model.children())[:-1]).cuda()
-        no_ap_model = torch.nn.Sequential(*list(cut_model.children())[:-1])
+        if cfg.use_cuda:
+            cut_model = load_model(cfg.train.model_type, output_root / "data").cuda
+            no_ap_model = torch.nn.Sequential(*list(cut_model.children())[:-1]).cuda()
+        else:
+            cut_model = load_model(cfg.train.model_type, output_root / "data")
+            no_ap_model = torch.nn.Sequential(*list(cut_model.children())[:-1])
     par_model = torch.nn.DataParallel(no_ap_model)
 
     for crop_type in crop_types:
@@ -105,12 +112,13 @@ def my_app(cfg: DictConfig) -> None:
                 )
 
                 with torch.no_grad():
-                    normed_feats = get_feats(par_model, loader)
+                    normed_feats = get_feats(par_model, loader, cfg)
                     all_nns = []
                     step = normed_feats.shape[0] // n_batches
                     print(normed_feats.shape)
                     for i in tqdm(range(0, normed_feats.shape[0], step)):
-                        # torch.cuda.empty_cache()
+                        if cfg.use_cuda:
+                            torch.cuda.empty_cache()
                         batch_feats = normed_feats[i : i + step, :]
                         pairwise_sims = torch.einsum(
                             "nf,mf->nm", batch_feats, normed_feats

@@ -37,9 +37,13 @@ def plot_heatmap(
         return [ax.imshow(heatmap, alpha=0.5, cmap=cmap, **kwargs)]
 
 
-def get_heatmaps(net, img, img_pos, query_points):
-    feats1, _ = net(img.cuda())
-    feats2, _ = net(img_pos.cuda())
+def get_heatmaps(net, img, img_pos, query_points, cfg):
+    if cfg.use_cuda:
+        feats1, _ = net(img.cuda())
+        feats2, _ = net(img_pos.cuda())
+    else:
+        feats1, _ = net(img)
+        feats2, _ = net(img_pos)
 
     sfeats1 = sample(feats1, query_points)
 
@@ -109,7 +113,10 @@ def my_app(cfg: DictConfig) -> None:
 
     data_dir = Path(cfg.output_root) / "data"
     if cfg.plot.arch == "feature-pyramid":
-        cut_model = load_model(cfg.plot.model_type, data_dir).cuda()
+        if cfg.use_cuda:
+            cut_model = load_model(cfg.plot.model_type, data_dir).cuda()
+        else:
+            cut_model = load_model(cfg.plot.model_type, data_dir)
         net = FeaturePyramidNet(
             cfg.plot.granularity, cut_model, cfg.plot.dim, cfg.plot.continuous
         )
@@ -117,7 +124,8 @@ def my_app(cfg: DictConfig) -> None:
         net = DinoFeaturizer(cfg.plot.dim, cfg)
     else:
         raise ValueError(f"Unknown arch {cfg.plot.arch}")
-    net = net.cuda()
+    if cfg.use_cuda:
+        net = net.cuda()
 
     for batch_val in loader:
         batch = batch_val
@@ -134,11 +142,16 @@ def my_app(cfg: DictConfig) -> None:
     with torch.no_grad():
         if cfg.plot.plot_correspondence:
             img_num = 6
-            query_points = (
-                torch.tensor([[-0.1, 0.0], [0.5, 0.8], [-0.7, -0.7]])
-                .reshape(1, 3, 1, 2)
-                .cuda()
-            )
+            if cfg.use_cuda:
+                query_points = (
+                    torch.tensor([[-0.1, 0.0], [0.5, 0.8], [-0.7, -0.7]])
+                    .reshape(1, 3, 1, 2)
+                    .cuda()
+                )
+            else:
+                query_points = torch.tensor(
+                    [[-0.1, 0.0], [0.5, 0.8], [-0.7, -0.7]]
+                ).reshape(1, 3, 1, 2)
 
             img = batch["img"][img_num : img_num + 1]
             img_pos = batch["img_pos"][img_num : img_num + 1]
@@ -151,7 +164,9 @@ def my_app(cfg: DictConfig) -> None:
             axes[2].set_title("KNN Correspondence", fontsize=20)
             fig.tight_layout()
 
-            heatmap_intra, heatmap_inter = get_heatmaps(net, img, img_pos, query_points)
+            heatmap_intra, heatmap_inter = get_heatmaps(
+                net, img, img_pos, query_points, cfg
+            )
             for point_num in range(query_points.shape[1]):
                 point = ((query_points[0, point_num, 0] + 1) / 2 * high_res).cpu()
                 img_point_h = point[0]
@@ -204,9 +219,14 @@ def my_app(cfg: DictConfig) -> None:
                             axis=1,
                         ).tolist()
                     )
-            query_points = (
-                torch.tensor(all_points).reshape(1, len(all_points), 1, 2).cuda()
-            )
+            if cfg.use_cuda:
+                query_points = (
+                    torch.tensor(all_points).reshape(1, len(all_points), 1, 2).cuda()
+                )
+            else:
+                query_points = torch.tensor(all_points).reshape(
+                    1, len(all_points), 1, 2
+                )
 
             plt.style.use("dark_background")
             fig, axes = plt.subplots(1, 3, figsize=(3 * 5, 1 * 5), dpi=100)

@@ -84,12 +84,20 @@ class LitRecalibrator(pl.LightningModule):
             dim = cfg.train.dim
 
         data_dir = join(cfg.output_root, "data")
-        self.moco = FeaturePyramidNet(
-            cfg.train.granularity,
-            load_model("mocov2", data_dir).cuda(),
-            dim,
-            cfg.train.continuous,
-        )
+        if cfg.use_cuda:
+            self.moco = FeaturePyramidNet(
+                cfg.train.granularity,
+                load_model("mocov2", data_dir).cuda(),
+                dim,
+                cfg.train.continuous,
+            )
+        else:
+            self.moco = FeaturePyramidNet(
+                cfg.train.granularity,
+                load_model("mocov2", data_dir),
+                dim,
+                cfg.train.continuous,
+            )
         # self.dino = DinoFeaturizer(dim, cfg)
         # self.dino = LitUnsupervisedSegmenter.load_from_checkpoint("../models/vit_base_cocostuff27.ckpt").net
         # self.crf = CRFModule()

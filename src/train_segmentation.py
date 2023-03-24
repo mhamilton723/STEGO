@@ -155,8 +155,10 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
 
         data_dir = Path(cfg.output_root) / "data"
         if cfg.train.arch == "feature-pyramid":
-            # cut_model = load_model(cfg.train.model_type, data_dir).cuda()
-            cut_model = load_model(cfg.train.model_type, data_dir)
+            if cfg.use_cuda:
+                cut_model = load_model(cfg.train.model_type, data_dir).cuda()
+            else:
+                cut_model = load_model(cfg.train.model_type, data_dir)
             self.net = FeaturePyramidNet(
                 cfg.train.granularity, cut_model, dim, cfg.train.continuous
             )
