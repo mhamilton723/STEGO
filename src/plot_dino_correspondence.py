@@ -73,7 +73,7 @@ def get_heatmaps(net, img, img_pos, query_points):
     return heatmap_intra, heatmap_inter
 
 
-@hydra.main(config_path="configs", config_name="plot_config", version_base="1.1")
+@hydra.main(config_path="configs", config_name="master_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     net: Any
     print(OmegaConf.to_yaml(cfg))
@@ -92,7 +92,7 @@ def my_app(cfg: DictConfig) -> None:
     if use_loader:
         dataset = ContrastiveSegDataset(
             pytorch_data_dir=pytorch_data_dir,
-            dataset_name=cfg.dataset_name,
+            dataset_name=cfg.plot.dataset_name,
             crop_type=None,
             image_set="train",
             transform=transform,
@@ -108,13 +108,15 @@ def my_app(cfg: DictConfig) -> None:
         loader = DataLoader(dataset, 16, shuffle=True, num_workers=cfg.num_workers)
 
     data_dir = Path(cfg.output_root) / "data"
-    if cfg.arch == "feature-pyramid":
-        cut_model = load_model(cfg.model_type, data_dir).cuda()
-        net = FeaturePyramidNet(cfg.granularity, cut_model, cfg.dim, cfg.continuous)
-    elif cfg.arch == "dino":
-        net = DinoFeaturizer(cfg.dim, cfg)
+    if cfg.plot.arch == "feature-pyramid":
+        cut_model = load_model(cfg.plot.model_type, data_dir).cuda()
+        net = FeaturePyramidNet(
+            cfg.plot.granularity, cut_model, cfg.plot.dim, cfg.plot.continuous
+        )
+    elif cfg.plot.arch == "dino":
+        net = DinoFeaturizer(cfg.plot.dim, cfg)
     else:
-        raise ValueError(f"Unknown arch {cfg.arch}")
+        raise ValueError(f"Unknown arch {cfg.plot.arch}")
     net = net.cuda()
 
     for batch_val in loader:
@@ -130,7 +132,7 @@ def my_app(cfg: DictConfig) -> None:
     ]
 
     with torch.no_grad():
-        if cfg.plot_correspondence:
+        if cfg.plot.plot_correspondence:
             img_num = 6
             query_points = (
                 torch.tensor([[-0.1, 0.0], [0.5, 0.8], [-0.7, -0.7]])
@@ -185,7 +187,7 @@ def my_app(cfg: DictConfig) -> None:
                 )
             plt.show()
 
-        if cfg.plot_movie:
+        if cfg.plot.plot_movie:
             img_num = 6
             key_points = [[-0.7, -0.7], [-0.1, 0.0], [0.5, 0.8]]
             all_points = []
