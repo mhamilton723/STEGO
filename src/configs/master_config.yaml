@@ -50,6 +50,7 @@ hydra:
 
 
 train:
+  log_dir: "exp1"
   experiment_name: "exp1"
   azureml_logging: True
   submitting_to_aml: False
