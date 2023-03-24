@@ -78,14 +78,17 @@ class LitRecalibrator(pl.LightningModule):
         self.cfg = cfg
         self.n_classes = n_classes
 
-        if not cfg.continuous:
+        if not cfg.train.continuous:
             dim = n_classes
         else:
-            dim = cfg.dim
+            dim = cfg.train.dim
 
         data_dir = join(cfg.output_root, "data")
         self.moco = FeaturePyramidNet(
-            cfg.granularity, load_model("mocov2", data_dir).cuda(), dim, cfg.continuous
+            cfg.train.granularity,
+            load_model("mocov2", data_dir).cuda(),
+            dim,
+            cfg.train.continuous,
         )
         # self.dino = DinoFeaturizer(dim, cfg)
         # self.dino = LitUnsupervisedSegmenter.load_from_checkpoint("../models/vit_base_cocostuff27.ckpt").net
@@ -93,7 +96,7 @@ class LitRecalibrator(pl.LightningModule):
         self.cm_metrics = UnsupervisedMetrics("confusion_matrix/", n_classes, 0, False)
         self.automatic_optimization = False
 
-        if self.cfg.dataset_name.startswith("cityscapes"):
+        if self.cfg.train.dataset_name.startswith("cityscapes"):
             self.label_cmap = create_cityscapes_colormap()
         else:
             self.label_cmap = create_pascal_label_colormap()
@@ -101,7 +104,7 @@ class LitRecalibrator(pl.LightningModule):
     def get_crf_fd(self, img, coords1, coords2):
         with torch.no_grad():
             n = img.shape[0]
-            [h1, w1, h2, w2] = [self.cfg.feature_samples] * 4
+            [h1, w1, h2, w2] = [self.cfg.train.feature_samples] * 4
             img_samples_1 = (
                 sample(img, coords1).permute(0, 2, 3, 1).reshape(n, -1, 1, 3)
             )
@@ -160,8 +163,8 @@ class LitRecalibrator(pl.LightningModule):
 
             coord_shape = [
                 img.shape[0],
-                self.cfg.feature_samples,
-                self.cfg.feature_samples,
+                self.cfg.train.feature_samples,
+                self.cfg.train.feature_samples,
                 2,
             ]
             coords1 = torch.rand(coord_shape, device=img.device) * 2 - 1
@@ -217,8 +220,8 @@ class LitRecalibrator(pl.LightningModule):
             sns.heatmap(hist.t(), annot=False, fmt="g", ax=ax, cmap="Blues", cbar=False)
             ax.set_title("KNN Labels", fontsize=28)
             ax.set_ylabel("Image labels", fontsize=28)
-            names = get_class_labels(self.cfg.dataset_name)
-            if self.cfg.extra_clusters:
+            names = get_class_labels(self.cfg.train.dataset_name)
+            if self.cfg.train.extra_clusters:
                 names = names + ["Extra"]
             ax.set_xticks(np.arange(0, len(names)) + 0.5)
             ax.set_yticks(np.arange(0, len(names)) + 0.5)
@@ -269,7 +272,7 @@ class LitRecalibrator(pl.LightningModule):
         return None
 
 
-@hydra.main(config_path="configs", config_name="train_config", version_base="1.1")
+@hydra.main(config_path="configs", config_name="master_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
     pytorch_data_dir = cfg.pytorch_data_dir
@@ -283,11 +286,11 @@ def my_app(cfg: DictConfig) -> None:
 
     train_dataset = ContrastiveSegDataset(
         pytorch_data_dir=pytorch_data_dir,
-        dataset_name=cfg.dataset_name,
-        crop_type=cfg.crop_type,
+        dataset_name=cfg.train.dataset_name,
+        crop_type=cfg.train.crop_type,
         image_set="train",
-        transform=get_transform(cfg.res, False, cfg.loader_crop_type),
-        target_transform=get_transform(cfg.res, True, cfg.loader_crop_type),
+        transform=get_transform(cfg.train.res, False, cfg.train.loader_crop_type),
+        target_transform=get_transform(cfg.train.res, True, cfg.train.loader_crop_type),
         cfg=cfg,
         aug_geometric_transform=None,
         aug_photometric_transform=None,
@@ -300,7 +303,7 @@ def my_app(cfg: DictConfig) -> None:
     val_loader_crop = "center"
     val_dataset = ContrastiveSegDataset(
         pytorch_data_dir=pytorch_data_dir,
-        dataset_name=cfg.dataset_name,
+        dataset_name=cfg.train.dataset_name,
         crop_type=None,
         image_set="val",
         transform=get_transform(320, False, val_loader_crop),
@@ -312,18 +315,18 @@ def my_app(cfg: DictConfig) -> None:
     )
 
     train_loader = DataLoader(
-        train_dataset, cfg.batch_size, shuffle=True, num_workers=cfg.num_workers
+        train_dataset, cfg.train.batch_size, shuffle=True, num_workers=cfg.num_workers
     )
     val_loader = DataLoader(
-        val_dataset, cfg.batch_size, shuffle=True, num_workers=cfg.num_workers
+        val_dataset, cfg.train.batch_size, shuffle=True, num_workers=cfg.num_workers
     )
 
     model = LitRecalibrator(train_dataset.n_classes, cfg)
 
-    prefix = "{}_{}".format(cfg.dataset_name, cfg.experiment_name)
+    prefix = "{}_{}".format(cfg.train.dataset_name, cfg.train.experiment_name)
     name = "{}_date_{}".format(prefix, datetime.now().strftime("%b%d_%H-%M-%S"))
     tb_logger = TensorBoardLogger(
-        join(log_dir, cfg.log_dir, name), default_hp_metric=False
+        join(log_dir, cfg.train.log_dir, name), default_hp_metric=False
     )
     steps = 1
     trainer = Trainer(
@@ -337,7 +340,7 @@ def my_app(cfg: DictConfig) -> None:
         logger=tb_logger,
     )
     trainer.fit(model, train_loader, val_loader)
-    os.makedirs(join(checkpoint_dir, cfg.log_dir), exist_ok=True)
+    os.makedirs(join(checkpoint_dir, cfg.train.log_dir), exist_ok=True)
 
 
 if __name__ == "__main__":
