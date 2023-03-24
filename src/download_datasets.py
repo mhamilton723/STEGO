@@ -21,13 +21,13 @@ def my_app(cfg: DictConfig) -> None:
             (pytorch_data_dir / dataset_name).exists()
             or (pytorch_data_dir / f"{dataset_name}.zip").exists()
         ):
-            print("\n Downloading {}".format(dataset_name))
+            print(f"\n Downloading {dataset_name}")
             wget.download(
                 url_base + dataset_name + ".zip",
                 str(pytorch_data_dir / f"{dataset_name}.zip"),
             )
         else:
-            print("\n Found {}, skipping download".format(dataset_name))
+            print(f"\n Found {dataset_name}, skipping download")
 
 
 if __name__ == "__main__":

@@ -1,13 +1,19 @@
 from collections import defaultdict
+from pathlib import Path
 
 import hydra
+import matplotlib.pyplot as plt
+import numpy as np
 import torch.multiprocessing
+import torch.nn.functional as F
 from omegaconf import DictConfig, OmegaConf
+from PIL import Image
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
-from data import *
-from modules import *
+from data import ContrastiveSegDataset
 from train_segmentation import LitUnsupervisedSegmenter
+from utils import flexible_collate, get_transform, prep_args, remove_axes, unnorm
 
 
 @hydra.main(config_path="configs", config_name="master_config", version_base="1.1")
@@ -15,11 +21,11 @@ def my_app(cfg: DictConfig) -> None:
     # print(OmegaConf.to_yaml(cfg))
     pytorch_data_dir = cfg.pytorch_data_dir
 
-    result_dir = "../results/predictions/potsdam"
-    os.makedirs(result_dir, exist_ok=True)
-    os.makedirs(join(result_dir, "img"), exist_ok=True)
-    os.makedirs(join(result_dir, "label"), exist_ok=True)
-    os.makedirs(join(result_dir, "cluster"), exist_ok=True)
+    result_dir = Path("../results/predictions/potsdam")
+    result_dir.mkdir(parents=True, exist_ok=True)
+    (result_dir / "img").mkdir(parents=True, exist_ok=True)
+    (result_dir / "label").mkdir(parents=True, exist_ok=True)
+    (result_dir / "cluster").mkdir(parents=True, exist_ok=True)
 
     full_dataset = ContrastiveSegDataset(
         pytorch_data_dir=pytorch_data_dir,
@@ -122,16 +128,10 @@ def my_app(cfg: DictConfig) -> None:
     ax[2].imshow(reshaped_label)
 
     if cfg.use_cuda:
-        Image.fromarray(reshaped_img.cuda()).save(
-            join(join(result_dir, "img", str(img_num) + ".png"))
-        )
+        Image.fromarray(reshaped_img.cuda()).save(result_dir / "img" / f"{img_num}.png")
     else:
-        Image.fromarray(reshaped_img).save(
-            join(join(result_dir, "img", str(img_num) + ".png"))
-        )
-    Image.fromarray(reshaped_preds).save(
-        join(join(result_dir, "cluster", str(img_num) + ".png"))
-    )
+        Image.fromarray(reshaped_img).save(result_dir / "img" / f"{img_num}.png")
+    Image.fromarray(reshaped_preds).save(result_dir / "cluster" / f"{img_num}.png")
 
     remove_axes(ax)
     plt.show()

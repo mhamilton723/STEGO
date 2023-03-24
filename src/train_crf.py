@@ -1,11 +1,13 @@
 import io
 from datetime import datetime
+from pathlib import Path
 
 import hydra
 import matplotlib.pyplot as plt
 import numpy as np
 import PIL.Image
 import torch
+import torch.nn.functional as F
 from kornia.color import rgb_to_lab
 from omegaconf import DictConfig, OmegaConf
 from skimage.segmentation import mark_boundaries
@@ -13,10 +15,13 @@ from sklearn.decomposition import PCA
 from tensorboardX import SummaryWriter
 from torch.nn import Linear, LogSoftmax, Sequential
 from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms as T
 from torchvision.transforms import ToTensor
 from tqdm import tqdm
 
-from utils import *
+from data import ContrastiveSegDataset
+from modules import ContrastiveCRFLoss
+from utils import ToTargetTensor, normalize, remove_axes, unnorm
 
 
 def norm(t):
@@ -39,7 +44,7 @@ def entropy(p):
 def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
     pytorch_data_dir = cfg.pytorch_data_dir
-    log_dir = join(cfg.output_root, "logs")
+    log_dir = Path(cfg.output_root) / "logs"
     continuous = cfg.continuous
     dim = cfg.dim
     dataset_name = cfg.dataset_name
@@ -48,6 +53,7 @@ def my_app(cfg: DictConfig) -> None:
     np.random.seed(0)
     torch.random.manual_seed(0)
 
+    # TODO: no idea where imsize comes from
     small_imsize = imsize // 2
     transform_with_resize = T.Compose(
         [T.Resize((small_imsize, small_imsize)), T.ToTensor(), normalize]
@@ -68,12 +74,9 @@ def my_app(cfg: DictConfig) -> None:
         cfg,
     )
 
-    prefix = "crf/{}_{}".format(cfg.dataset_name, cfg.experiment_name)
+    prefix = f"crf/{cfg.dataset_name}_{cfg.experiment_name}"
     writer = SummaryWriter(
-        join(
-            log_dir,
-            "{}_date_{}".format(prefix, datetime.now().strftime("%m:%d:%Y:%H:%M")),
-        )
+        log_dir / f"{prefix}_date_{datetime.now().strftime('%m:%d:%Y:%H:%M')}"
     )
 
     class CodeSpaceTable(torch.nn.Module):
@@ -147,7 +150,7 @@ def my_app(cfg: DictConfig) -> None:
         elif cfg.color_space == "lab":
             img_t = to_normed_lab(img, cfg)
         else:
-            raise ValueError("unknown color space: {}".format(cfg.color_space))
+            raise ValueError(f"unknown color space: {cfg.color_space}")
 
         if continuous:
             ent_reg_term = 0

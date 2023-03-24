@@ -1,21 +1,30 @@
-import io
 from datetime import datetime
+from pathlib import Path
 
 import hydra
-import PIL.Image
+import matplotlib.pyplot as plt
+import numpy as np
 import pytorch_lightning as pl
 import seaborn as sns
+import torch
+import torch.nn.functional as F
 from lightning_fabric.utilities.seed import seed_everything
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
 from sklearn.metrics import auc, average_precision_score, precision_recall_curve
+from torch.utils.data import DataLoader
 from torch.utils.tensorboard.summary import hparams
 from torchvision.transforms import ToTensor
 
-from data import *
-from modules import *
+from data import (
+    ContrastiveSegDataset,
+    create_cityscapes_colormap,
+    create_pascal_label_colormap,
+)
+from modules import FeaturePyramidNet, norm, sample, tensor_correlation
 from train_segmentation import get_class_labels
+from utils import UnsupervisedMetrics, get_transform, load_model, prep_args
 
 
 @torch.jit.script
@@ -50,7 +59,7 @@ def plot_auc_raw(name, fpr, tpr):
     plt.plot(fpr, tpr, label=name + " AUC = %0.2f" % roc_auc)
 
 
-class CRFModule(nn.Module):
+class CRFModule(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.w1 = torch.nn.Parameter(torch.tensor(10.0), requires_grad=True)
@@ -83,7 +92,7 @@ class LitRecalibrator(pl.LightningModule):
         else:
             dim = cfg.train.dim
 
-        data_dir = join(cfg.output_root, "data")
+        data_dir = Path(cfg.output_root) / "data"
         if cfg.use_cuda:
             self.moco = FeaturePyramidNet(
                 cfg.train.granularity,
@@ -214,9 +223,7 @@ class LitRecalibrator(pl.LightningModule):
             precisions, recalls, _ = precision_recall_curve(targets, preds)
             average_precision = average_precision_score(targets, preds)
             plt.plot(
-                recalls,
-                precisions,
-                label="AP={}% {}".format(int(average_precision * 100), name),
+                recalls, precisions, label=f"AP={int(average_precision * 100)}% {name}"
             )
 
         def plot_cm():
@@ -284,11 +291,11 @@ class LitRecalibrator(pl.LightningModule):
 def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
     pytorch_data_dir = cfg.pytorch_data_dir
-    data_dir = join(cfg.output_root, "data")
-    log_dir = join(cfg.output_root, "logs")
-    checkpoint_dir = join(cfg.output_root, "checkpoints")
-    os.makedirs(data_dir, exist_ok=True)
-    os.makedirs(log_dir, exist_ok=True)
+    data_dir = Path(cfg.output_root) / "data"
+    log_dir = Path(cfg.output_root) / "logs"
+    checkpoint_dir = Path(cfg.output_root) / "checkpoints"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    log_dir.mkdir(parents=True, exist_ok=True)
 
     seed_everything(seed=0, workers=True)
 
@@ -331,10 +338,10 @@ def my_app(cfg: DictConfig) -> None:
 
     model = LitRecalibrator(train_dataset.n_classes, cfg)
 
-    prefix = "{}_{}".format(cfg.train.dataset_name, cfg.train.experiment_name)
-    name = "{}_date_{}".format(prefix, datetime.now().strftime("%b%d_%H-%M-%S"))
+    prefix = f"{cfg.train.dataset_name}_{cfg.train.experiment_name}"
+    name = f"{prefix}_date_{datetime.now().strftime('%b%d_%H-%M-%S')}"
     tb_logger = TensorBoardLogger(
-        join(log_dir, cfg.train.log_dir, name), default_hp_metric=False
+        log_dir / cfg.train.log_dir / name, default_hp_metric=False
     )
     steps = 1
     trainer = Trainer(
@@ -348,7 +355,7 @@ def my_app(cfg: DictConfig) -> None:
         logger=tb_logger,
     )
     trainer.fit(model, train_loader, val_loader)
-    os.makedirs(join(checkpoint_dir, cfg.train.log_dir), exist_ok=True)
+    (checkpoint_dir / cfg.train.log_dir).mkdir(parents=True, exist_ok=True)
 
 
 if __name__ == "__main__":

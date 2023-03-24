@@ -4,14 +4,15 @@ from pathlib import Path
 import hydra
 import numpy as np
 import torch.multiprocessing
+import torch.nn.functional as F
 from omegaconf import DictConfig, OmegaConf
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 from crf import dense_crf
-from modules import *
 from train_segmentation import LitUnsupervisedSegmenter
+from utils import flexible_collate, get_transform, prep_args
 
 torch.multiprocessing.set_sharing_strategy("file_system")
 
@@ -38,7 +39,7 @@ class UnlabeledImageFolder(Dataset):
 
 @hydra.main(config_path="configs", config_name="master_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
-    result_dir = Path("../results/predictions/{}".format(cfg.demo.experiment_name))
+    result_dir = Path("../results/predictions/") / f"{cfg.demo.experiment_name}"
     result_dir.mkdir(parents=True, exist_ok=True)
     (result_dir / "cluster").mkdir(parents=True, exist_ok=True)
     (result_dir / "linear").mkdir(parents=True, exist_ok=True)

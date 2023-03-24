@@ -1,3 +1,4 @@
+import argparse
 import collections
 import io
 from pathlib import Path
@@ -67,7 +68,7 @@ def one_hot_feats(labels, n_classes):
     return F.one_hot(labels, n_classes).permute(0, 3, 1, 2).to(torch.float32)
 
 
-def load_model(model_type, data_dir: Path):
+def load_model(model_type, data_dir: Path, cfg):
     if model_type == "robust_resnet50":
         model = models.resnet50(pretrained=False)
         model_file = data_dir / "imagenet_l2_3_0.pt"

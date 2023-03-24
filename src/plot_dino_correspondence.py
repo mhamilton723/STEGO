@@ -237,7 +237,9 @@ def my_app(cfg: DictConfig) -> None:
 
             fig.tight_layout()
 
-            heatmap_intra, heatmap_inter = get_heatmaps(net, img, img_pos, query_points)
+            heatmap_intra, heatmap_inter = get_heatmaps(
+                net, img, img_pos, query_points, cfg
+            )
 
             frames = []  # for storing the generated images
             for point_num in range(query_points.shape[1]):
