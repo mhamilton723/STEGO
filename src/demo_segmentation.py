@@ -1,6 +1,8 @@
 import random
+from pathlib import Path
 
 import hydra
+import numpy as np
 import torch.multiprocessing
 from omegaconf import DictConfig, OmegaConf
 from PIL import Image
@@ -17,12 +19,12 @@ torch.multiprocessing.set_sharing_strategy("file_system")
 class UnlabeledImageFolder(Dataset):
     def __init__(self, root, transform):
         super(UnlabeledImageFolder, self).__init__()
-        self.root = join(root)
+        self.root = Path(root)
         self.transform = transform
-        self.images = os.listdir(self.root)
+        self.images = list(self.root.iterdir())
 
     def __getitem__(self, index):
-        image = Image.open(join(self.root, self.images[index])).convert("RGB")
+        image = Image.open(self.root / self.images[index]).convert("RGB")
         seed = np.random.randint(2147483647)
         random.seed(seed)
         torch.manual_seed(seed)
@@ -36,10 +38,10 @@ class UnlabeledImageFolder(Dataset):
 
 @hydra.main(config_path="configs", config_name="master_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
-    result_dir = "../results/predictions/{}".format(cfg.demo.experiment_name)
-    os.makedirs(result_dir, exist_ok=True)
-    os.makedirs(join(result_dir, "cluster"), exist_ok=True)
-    os.makedirs(join(result_dir, "linear"), exist_ok=True)
+    result_dir = Path("../results/predictions/{}".format(cfg.demo.experiment_name))
+    result_dir.mkdir(parents=True, exist_ok=True)
+    (result_dir / "cluster").mkdir(parents=True, exist_ok=True)
+    (result_dir / "linear").mkdir(parents=True, exist_ok=True)
 
     model = LitUnsupervisedSegmenter.load_from_checkpoint(cfg.demo.model_path)
     print(OmegaConf.to_yaml(model.cfg))
@@ -88,10 +90,10 @@ def my_app(cfg: DictConfig) -> None:
 
                 new_name = ".".join(name[j].split(".")[:-1]) + ".png"
                 Image.fromarray(linear_crf.astype(np.uint8)).save(
-                    join(result_dir, "linear", new_name)
+                    result_dir / "linear" / new_name
                 )
                 Image.fromarray(cluster_crf.astype(np.uint8)).save(
-                    join(result_dir, "cluster", new_name)
+                    result_dir / "cluster" / new_name
                 )
 
 
