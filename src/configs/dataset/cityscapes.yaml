@@ -30,4 +30,5 @@ train:
   #pos_inter_shift: 0.1754346515479633
   #pos_intra_shift: 0.45828472207
 
-log_dir: "cityscapes"
+  log_dir: "cityscapes"
+  dataset_name: "cityscapes"

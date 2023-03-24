@@ -22,4 +22,5 @@ train:
   pos_inter_shift: 0.02
   pos_intra_shift: 0.08
 
-log_dir: "potsdam"
+  log_dir: "potsdam"
+  datset_name: "potsdam"

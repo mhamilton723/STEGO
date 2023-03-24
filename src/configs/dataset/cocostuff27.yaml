@@ -54,4 +54,5 @@ train:
   #pos_inter_shift: .36 (or .12)
   #pos_intra_shift: .32 (or .18)
 
-log_dir: "cocostuff27"
+  log_dir: "cocostuff27"
+  dataset_name: "cocostuff27"

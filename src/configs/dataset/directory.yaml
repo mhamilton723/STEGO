@@ -25,4 +25,5 @@ train:
   pos_inter_shift: 0.02
   pos_intra_shift: 0.08
 
-log_dir: "directory"
+  log_dir: "directory"
+  dataset_name: "directory"
