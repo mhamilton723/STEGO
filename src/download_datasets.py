@@ -7,7 +7,7 @@ from omegaconf import DictConfig
 from utils import prep_args
 
 
-@hydra.main(config_path="configs", config_name="eval_config", version_base="1.1")
+@hydra.main(config_path="configs", config_name="master_config", version_base="1.1")
 def my_app(cfg: DictConfig) -> None:
     pytorch_data_dir = Path(cfg.pytorch_data_dir)
     dataset_names = ["potsdam", "cityscapes", "cocostuff", "potsdamraw"]
